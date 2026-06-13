@@ -1,0 +1,575 @@
+---
+title: "Informe 2"
+---
+
+Universidad de Chile  
+Facultad de Ciencias Físicas y Matemáticas  
+Departamento de Ingeniería Civil Industrial  
+Ingeniería Industrial
+
+---
+
+## SLEP Los Libertadores
+
+**Integrantes:**  
+Adolfo Rojas  
+Agustín Faure  
+Andrés Gallardo  
+Daniela Pescador  
+Millaray Salazar  
+
+**Profesor:** Claudio Pizarro  
+
+**Auxiliares:**  
+Analy Quintanilla  
+Nicolás González  
+Sebastián Sabat  
+
+**Ayudante:** Antonia B. Oropesa  
+
+**Fecha de entrega:** 30 de mayo de 2026  
+Santiago de Chile
+
+---
+
+# Índice de Contenidos
+
+1. Caracterización del Cliente
+2. Problema Estratégico
+   1. Antecedentes
+   2. Problema Estratégico
+   3. Variables Clave
+3. Definición del Proyecto
+   1. Objetivo General
+   2. Objetivos Específicos
+4. Avances por Objetivos Específicos
+   1. Caracterización de la Demanda y Entorno Familiar
+      1. Análisis del Contexto Sociodemográfico
+      2. Análisis de Estudios
+      3. Análisis de entrevistas
+         1. Perspectiva institucional del SLEP Los Libertadores
+         2. Perspectiva de las familias
+   2. Diagnóstico de la Oferta Educativa
+   3. Estudio de Posicionamiento y Competencia Territorial
+      1. Participación territorial y presión competitiva
+      2. Análisis de la propuesta de valor de la competencia
+      3. Comparación de resultados académicos
+      4. Hallazgo estratégico
+   4. Diagnóstico de las competencias centrales del SLEP
+5. Anexos
+   Referencias
+
+---
+
+# Índice de Figuras
+
+1. **Figura 1:** Izquierda: atributos negativos asociados al colegio público según las familias encuestadas. Derecha: razones de preferencia por el colegio particular subvencionado. Elaboración propia a partir de encuestas y entrevistas (n=30), mayo de 2026.
+2. **Figura 2:** Razones de inasistencia escolar mencionadas por las familias, ordenadas por frecuencia. Las categorías no son mutuamente excluyentes: una misma familia podía señalar más de una razón. Elaboración propia (n = 30), mayo de 2026.
+3. **Figura 3:** Izquierda: percepción de las familias sobre la gravedad de la inasistencia escolar. Derecha: evaluación del acompañamiento del colegio ante casos de inasistencia. Elaboración propia (n = 30), mayo de 2026.
+4. **Figura 4:** Izquierda: participación de mercado 2025 (Conchalí + Quilicura). Derecha: distribución de matrícula SLEP por nivel educativo, 2025. Elaboración propia a partir de Mineduc SIGE 2025.
+5. **Figura 5:** Top 5 establecimientos SLEP con mayor y menor matrícula, 2025. Elaboración propia a partir de Mineduc SIGE 2025.
+6. **Figura 6:** Detalle de matrícula por dependencia y evolución histórica en la comuna de Conchalí, 2025.
+7. **Figura 7:** Detalle de matrícula por dependencia y evolución histórica en la comuna de Quilicura, 2025.
+8. **Figura 8:** Distribución de matrícula de los Servicios Locales de Educación Pública (SLEP) en régimen, destacando a Los Libertadores, 2025.
+9. **Figura 9:** Cantidad de establecimientos educacionales por dependencia en Conchalí.
+10. **Figura 10:** Cantidad de establecimientos educacionales por dependencia en Quilicura.
+
+---
+
+# Índice de Tablas
+
+1. **Tabla 1:** Promedio de resultados PAES por tipo de establecimiento.
+
+---
+
+# 1. Caracterización del Cliente
+
+El Servicio Local de Educación Pública Los Libertadores (SLEP Los Libertadores) es un organismo público descentralizado, con personalidad jurídica y patrimonio propio, creado bajo la Ley No 21.040 para traspasar la administración educativa desde los municipios hacia servicios especializados. Opera desde el 1 de enero de 2025 como sostenedor de los establecimientos antes administrados por las municipalidades de Conchalí y Quilicura, bajo la dirección ejecutiva de Oriele Rossel Carrillo.
+
+El Servicio cuenta con una dotación de más de 2.400 funcionarios y administra 49 establecimientos (31 escuelas y liceos, 18 jardines infantiles y salas cuna), con 16.298 estudiantes matriculados, representando el 22,4% del total de la matrícula territorial. Sus estudiantes presentan alta vulnerabilidad socioeconómica (IVE promedio de 78% en básica), un 56,1% de alumnos prioritarios y cerca de un 30% de matrícula extranjera. Su presupuesto para 2025 asciende a M$52.000.327, financiado principalmente por subvenciones estatales vinculadas a matrícula y asistencia, el 90,8% se destina a gasto en personal, lo que configura un modelo financiero rígido y sensible a fluctuaciones operacionales.
+
+Su misión es garantizar una educación de calidad, inclusiva y con enfoque de derechos, articulada en torno a cuatro sellos institucionales: buen trato y bienestar emocional, calidad educativa, interculturalidad y compromiso medioambiental. El Plan Estratégico Local 2025–2031 define seis objetivos: mejorar aprendizajes, fortalecer capacidades del personal, desarrollar liderazgo directivo, mejorar infraestructura, aumentar la participación de familias y asegurar la sostenibilidad financiera.
+
+El proyecto se desarrolla con el apoyo de la Unidad de Desarrollo Estratégico y Vinculación Territorial, bajo la asesoría de Paola Álvarez, Profesional Asesora de la Dirección Ejecutiva, unidad responsable del seguimiento del PEL y la articulación con actores internos y externos del territorio.
+
+---
+
+# 2. Problema Estratégico
+
+## 2.1. Antecedentes
+
+El SLEP Los Libertadores enfrenta una caída sostenida de matrícula en escuelas y liceos, que descendió de 16.021 estudiantes en 2022 a 14.259 en 2025, mientras que el nivel parvulario muestra la tendencia inversa, creciendo de 1.863 a 2.039 estudiantes en el mismo período [1]. A esto se suma una inasistencia crónica que alcanzó un peak de 59,9% en 2023 y, pese a reducirse al 46% en 2024, sigue siendo un factor de riesgo crítico [1]. En términos de participación de mercado, solo el 22,4% de los estudiantes del territorio asiste a establecimientos públicos, frente a una meta institucional del 28% al sexto año de funcionamiento [2].
+
+Este escenario tiene implicancias financieras directas: al estar el presupuesto del Servicio vinculado a subvenciones por matrícula y asistencia efectiva, la pérdida sostenida de estudiantes genera vulnerabilidad presupuestaria y obliga a realizar ajustes en la dotación de personal como medida de contingencia [2]. Frente a ello, la Directiva del Servicio ha definido como prioridad para 2025 recuperar el vínculo con la comunidad y posicionar la educación pública como una alternativa reconocida por las familias, con foco permanente en incrementar tanto la matrícula como la asistencia [3, comunicación personal, 2025].
+
+## 2.2. Problema Estratégico
+
+El problema estratégico que enfrenta el SLEP Los Libertadores es la dificultad para construir una propuesta de valor que las familias del territorio reconozcan como superior a la del sector particular subvencionado, lo que se traduce en la pérdida sostenida de matrícula y en bajos niveles de asistencia que comprometen el cumplimiento de su misión.
+
+Aunque la caída de matrícula y la inasistencia crónica son los indicadores que primero llaman la atención sobre la situación del Servicio, comprender el problema exige mirar más allá de su comportamiento agregado. Una parte de esta caída responde a tendencias estructurales que afectan al sistema escolar en su conjunto, como la contracción demográfica nacional y el quiebre que generó la pandemia en las trayectorias educativas, sin embargo, la tasa de pérdida del SLEP supera consistentemente a la del promedio nacional, lo que indica que existe un componente específico vinculado a las decisiones que las familias del territorio toman al elegir un establecimiento.
+
+Esas decisiones responden a múltiples factores que se refuerzan entre sí. Por un lado, persiste la imagen heredada de la "educación municipal" pese al cambio administrativo, sumada a un desconocimiento generalizado de los atributos diferenciadores que el SLEP efectivamente entrega, tales como su articulación con redes territoriales de salud y protección, su capacidad de atención a estudiantes con necesidades educativas especiales y su gobernanza participativa. Por otro lado, el sector particular subvencionado ha consolidado propuestas visibles y reconocibles, articuladas en torno a atributos como orden, disciplina, calidad académica percibida y selectividad social, lo que les permite a las familias asociar rápidamente cada establecimiento con beneficios esperados. A esta asimetría comunicacional se suma una brecha de desempeño en dimensiones que las familias valoran de manera explícita, particularmente en resultados académicos medibles, donde el SLEP se ubica por debajo de la competencia.
+
+El problema opera, además, bajo dos restricciones estructurales que delimitan el espacio de respuesta del Servicio. La primera es la rigidez presupuestaria del modelo de financiamiento estatal, con una estructura de gastos altamente concentrada en personal, lo que limita el margen para invertir en infraestructura o programas diferenciadores. La segunda son las condiciones socioeconómicas del territorio, marcadas por alta vulnerabilidad, hacinamiento e inseguridad, que restringen la capacidad de las familias para acompañar la trayectoria educativa de sus hijos y demandan que cualquier propuesta de valor considere también los soportes que el Servicio puede entregar al hogar. En este escenario, abordar el problema mediante herramientas exclusivamente administrativas resulta insuficiente, ya que estas pueden corregir indicadores operativos sin modificar los factores que efectivamente influyen en la elección y permanencia de las familias.
+
+El problema lleva implícita, además, una decisión estratégica de fondo: si la prioridad institucional debe orientarse hacia la captación de nuevos estudiantes, incluyendo a aquellos actualmente fuera del sistema o matriculados en el sector particular subvencionado, con especial atención a la transición parvularia–básica, donde se concentra el punto de fuga más probable, o hacia la fidelización de las familias ya presentes en los establecimientos del Servicio. La resolución de esta disyuntiva constituye uno de los focos que serán abordados con mayor profundidad en las etapas posteriores del proyecto.
+
+## 2.3. Variables Clave
+
+El problema descrito involucra un conjunto de variables que pueden agruparse en cinco dimensiones. Cada una captura un componente específico de las decisiones de las familias y del espacio de respuesta del Servicio, y en conjunto permiten comprender las condiciones que sostienen la asimetría competitiva entre el SLEP y el sector particular subvencionado.
+
+**a) Variables de demanda y entorno familiar.** Capturan el comportamiento de las familias del territorio en relación con la elección y permanencia en establecimientos educacionales. Comprenden el perfil sociodemográfico de los hogares, los criterios efectivos de elección de establecimiento, incluyendo proximidad, redes sociales y calidad percibida, los factores culturales y económicos que inciden en la inasistencia crónica, y la capacidad de las familias para acompañar el proceso educativo de sus hijos. El análisis de estas variables permite responder a una pregunta central del lado de la demanda: qué busca y qué valora el apoderado al momento de elegir un colegio, y en qué medida esos criterios responden a juicios técnicos o a lógicas socioculturales de distinción.
+
+**b) Variables de oferta y capacidades centrales del SLEP.** Comprenden los recursos, procesos y competencias institucionales sobre los cuales el Servicio puede sustentar una propuesta de valor diferenciada. Incluyen la dotación docente y su nivel de habilitación, la calidad y estado de la infraestructura, los resultados de aprendizaje, la oferta programática complementaria y las capacidades distintivas detectadas en el diagnóstico, como la profesionalización de la gestión educativa, la articulación sistémica con redes públicas de salud y protección, el enfoque en inclusión y diversidad y la gobernanza participativa. La identificación de estas competencias centrales delimita el conjunto de atributos defendibles sobre los cuales puede construirse una propuesta reconocible por las familias, así como las dimensiones en que el desempeño del Servicio se encuentra por debajo de la competencia y requiere fortalecimiento.
+
+**c) Variables competitivas y de posicionamiento.** Refieren al entorno competitivo en el cual opera el SLEP, particularmente respecto del sector particular subvencionado en las comunas de Conchalí y Quilicura. Incluyen la distribución territorial de la oferta competidora, la heterogeneidad de sus estrategias de posicionamiento, que abarcan desde la formación valórica y el inglés intensivo hasta la excelencia académica y la formación técnico-profesional, la consistencia con que estas propuestas son comunicadas a las familias y los resultados académicos que respaldan su atractivo percibido. Estas variables permiten dimensionar la asimetría competitiva que enfrenta el SLEP e identificar los espacios donde resulta viable construir diferenciación.
+
+**d) Variables de sostenibilidad financiera y restricciones normativas.** Capturan las condiciones presupuestarias y regulatorias que delimitan el espacio de maniobra estratégica del Servicio. Comprenden la sensibilidad del presupuesto a la matrícula y asistencia efectiva, la rigidez de la estructura de gastos y las restricciones normativas que regulan la gestión de la dotación, la inversión en infraestructura y la captación de recursos extrapresupuestarios. Estas variables operan como condiciones de borde en la formulación de cualquier estrategia, dado que delimitan qué iniciativas son financiera e institucionalmente sostenibles.
+
+**e) Variables de percepción y propuesta de valor.** Articulan el cruce entre el valor que el Servicio entrega y el que las familias reconocen. Comprenden la imagen institucional heredada del modelo de administración municipal, el grado de conocimiento que las familias tienen sobre la oferta pública disponible, la percepción comparativa del SLEP frente al sector particular subvencionado y la distancia entre los atributos que el Servicio efectivamente ofrece y aquellos que son visibles para los apoderados. Esta dimensión sintetiza los hallazgos de las cuatro anteriores y permite evaluar dónde se concentra la asimetría competitiva: si se origina principalmente en un déficit comunicacional, en un déficit objetivo de desempeño, o en una combinación de ambos.
+
+La interacción entre estas cinco dimensiones permite estructurar el análisis estratégico bajo una lógica de coherencia interna. Las variables de demanda definen qué necesitan las familias, las de oferta y capacidades, qué entrega el SLEP y dónde tiene déficits, las competitivas, qué entrega la competencia y por qué resulta más atractiva, las financieras y normativas, qué es viable para el Servicio, y las de percepción, dónde y por qué se sostiene la asimetría. El espacio estratégico sobre el cual deberán formularse las recomendaciones del presente trabajo se ubica en el cruce entre las capacidades reales del SLEP, las restricciones que enfrenta y los atributos que las familias del territorio efectivamente valoran.
+
+---
+
+# 3. Definición del Proyecto
+
+## 3.1. Objetivo General
+
+Diseñar un plan estratégico de captación y retención de estudiantes y sus familias, que permita optimizar el uso de la capacidad instalada del Servicio Local y asegurar el cumplimiento de su misión educativa en el territorio.
+
+## 3.2. Objetivos Específicos
+
+1. **Caracterización de la Demanda y Entorno Familiar**  
+   Analizar el perfil sociodemográfico de los estudiantes y sus familias en el territorio, identificando los factores culturales y socioeconómicos que inciden en la inasistencia grave y en la elección de establecimientos.
+
+2. **Diagnóstico de la Oferta Educativa y Capacidades del SLEP**  
+   Evaluar la estructura pedagógica y operativa de los establecimientos dependientes del SLEP, incluyendo metodologías docentes y dotación de personal, para identificar las competencias centrales (fortalezas institucionales) que diferencian la educación pública en el territorio.
+
+3. **Estudio de Posicionamiento y Competencia Territorial**  
+   Mapear la oferta de proveedores educativos particulares pagados y subvencionados en la zona, comparando sus indicadores de atracción y retención con los del SLEP para ajustar la estrategia de vinculación comunitaria.
+
+4. **Análisis de Sostenibilidad Financiera y Marco Regulatorio**  
+   Examinar el modelo de financiamiento basado en subvenciones por asistencia y la normativa legal vigente, con el fin de cuantificar el impacto de la variabilidad de la matrícula en la estabilidad presupuestaria y la gestión de recursos.
+
+---
+
+# 4. Avances por Objetivos Específicos
+
+A continuación se muestran los avances del proyecto hasta la fecha, ordenándolos por objetivo específico. Los avances consideran análisis bibliográficos y análisis de entrevistas a distintos actores del territorio.
+
+## 4.1. Caracterización de la Demanda y Entorno Familiar
+
+### 4.1.1. Análisis del Contexto Sociodemográfico
+
+El presente análisis fue elaborado a partir de los Reportes Estadísticos Comunales 2025 de Quilicura y Conchalí, publicados por la Biblioteca del Congreso Nacional de Chile [4, 5]. El propósito de este análisis es caracterizar el perfil sociodemográfico de las familias en ambos territorios, identificando aquellos factores culturales y socioeconómicos que permiten comprender mejor las condiciones en que los estudiantes y sus familias se relacionan con el sistema escolar, y que pueden incidir tanto en la inasistencia grave como en la elección de establecimientos.
+
+#### Caracterización general del territorio
+
+Las comunas de Quilicura y Conchalí pertenecen a la Provincia de Santiago y presentan perfiles territoriales marcadamente distintos. Quilicura abarca 58 km² con una población de 205.624 habitantes según el Censo 2024, mientras que Conchalí concentra 121.587 habitantes en apenas 10,7 km², configurando una de las comunas de mayor densidad de la región. Comprender estas diferencias territoriales es fundamental para contextualizar los factores estructurales que inciden en la elección de establecimientos y en los patrones de inasistencia, ya que la densidad y la dispersión urbana condicionan tanto la oferta escolar disponible como la accesibilidad de las familias a ella.
+
+#### Estructura etaria
+
+Quilicura presenta una población relativamente joven: el 19,1% tiene entre 0 y 14 años, superando el promedio regional (17,3%), lo que se traduce en una mayor demanda activa del sistema escolar y una mayor presencia de familias con hijos en edad de escolarización obligatoria. Conchalí, en cambio, muestra un perfil más envejecido: el 16,5% de su población tiene entre 0 y 14 años, por debajo del promedio regional, mientras que el 15,8% supera los 65 años, por encima del 13,2% regional.
+
+Esta proporción elevada de adultos mayores es relevante para el análisis del perfil familiar, ya que puede indicar una mayor presencia de abuelos u otros familiares de edad avanzada cumpliendo el rol de apoderado. Dicha configuración puede asociarse a dinámicas particulares en el seguimiento de la asistencia escolar, en la comunicación con los establecimientos y en la capacidad de respuesta ante situaciones de crisis.
+
+#### Diversidad cultural
+
+Ambas comunas registran una proporción importante de población nacida en el extranjero: 13,3% en Quilicura y 14,5% en Conchalí, ambas muy por encima del promedio nacional (8,7%). La presencia significativa de familias migrantes constituye un factor cultural relevante para este estudio, dado que implica trayectorias escolares heterogéneas, posibles barreras idiomáticas o administrativas, y dinámicas de integración que pueden incidir tanto en la elección de establecimiento como en la regularidad de la asistencia.
+
+#### Vulnerabilidad social
+
+En Conchalí, el 8,5% de las personas vive en hogares sin acceso a servicios básicos (por encima del promedio regional de 8,2%) y un 9,0% de los hogares presenta hacinamiento, la cifra más alta entre los territorios comparados. Quilicura muestra condiciones más favorables en ambos indicadores (3,8% y 3,7% respectivamente). Estas condiciones materiales son un factor socioeconómico directo en la inasistencia grave, ya que el hacinamiento dificulta el descanso y el estudio en el hogar, mientras que la carencia de servicios básicos refleja una vulnerabilidad estructural que puede comprometer la capacidad de las familias de sostener la escolarización regular de sus hijos.
+
+#### Matrícula y estructura del sistema escolar
+
+En cuanto a la distribución de establecimientos, el sector público representa una minoría en ambas comunas. En Quilicura, los establecimientos municipales representan el 20,7% del total, frente a un 75,9% de particulares subvencionados. En Conchalí la presencia pública es algo mayor, con un 33,3% de establecimientos municipales frente a un 63,2% de particulares subvencionados.
+
+Esta estructura se refleja en los datos de matrícula: entre 2022 y 2024, ambas comunas experimentaron una reducción tanto en el sector municipal como en el total. En Quilicura, la matrícula total disminuyó un 1,3% (de 43.751 a 43.165 estudiantes), mientras que la matrícula municipal cayó un 5,2% (de 7.071 a 6.707). En Conchalí, la matrícula total bajó un 4,2% (de 21.843 a 20.919), en tanto la matrícula municipal lo hizo en un 6,9% (de 8.187 a 7.620). En ambos casos, la caída del sector público supera a la baja general, y esta tendencia no se ha revertido con la entrada en operación del SLEP Los Libertadores a partir de 2025: según datos del propio servicio, la matrícula de sus establecimientos continuó descendiendo, pasando de 16.021 estudiantes en 2022 a 14.259 en 2025, lo que indica que la disminución de matrícula en el sector público es una tendencia sostenida que antecede y se prolonga más allá del cambio administrativo.
+
+#### Seguridad y entorno comunitario
+
+La tasa de denuncias por violencia intrafamiliar en Conchalí alcanzó 523,1 por cada 100.000 habitantes en 2024, superando el promedio regional de 489,9, mientras que Quilicura registra 440,6. La violencia intrafamiliar es un factor de riesgo documentado para la inasistencia grave, dado que afecta directamente el bienestar emocional de los estudiantes, altera las rutinas del hogar y puede generar situaciones de crisis que interrumpen la asistencia regular. Su mayor prevalencia en Conchalí refuerza la necesidad de considerar el entorno familiar y comunitario como una dimensión central del perfil sociodemográfico del territorio.
+
+### 4.1.2. Análisis de Estudios
+
+El estudio de Canales, Bellei y Orellana [6] evidencia que la elección escolar en sectores medios y medio-bajos no responde a criterios técnicos como puntajes SIMCE, sino a lógicas socioculturales. Las familias utilizan el pago de matrícula como mecanismo de segregación identitaria, evitando la mezcla con sectores de menor posición socioeconómica. Bajo esta lógica, valoran los filtros de selección moral, los marcos disciplinarios rígidos y la pequeña escala del establecimiento, asociando la masividad de la escuela pública con peligro e inestabilidad. Este patrón es especialmente pertinente para Conchalí y Quilicura, cuyos habitantes comparten el perfil socioeconómico descrito, y permite comprender que la decisión de matrícula en estas comunas refleja proyectos de movilidad social acotada dentro de las restricciones geográficas y presupuestarias propias del territorio.
+
+Una vez que las familias han elegido establecimiento, el desafío siguiente es sostener la asistencia regular, ámbito en que el estudio del CIEDE [7] aporta evidencia clave. La inasistencia grave, definida como asistencia inferior al 85%, es un fenómeno multifactorial que actúa como antesala directa de la deserción escolar. Cruzando esta evidencia con los datos del territorio, se identifican tres factores determinantes. Primero, las condiciones habitacionales precarias: las tasas de hacinamiento superan la media nacional, alcanzando un 8,7% en Quilicura y un 9,0% en Conchalí, donde además el 8,5% de las personas carece de servicios básicos. Segundo, el capital cultural del hogar y el involucramiento parental, cuya influencia se ve restringida por la alta pobreza multidimensional del territorio, especialmente en Conchalí con un 29,4%, debilitando las redes de apoyo familiar ante contingencias de salud o cuidado. Tercero, la inseguridad del entorno: las tasas de denuncias por delitos violentos alcanzan 2.056,3 por cada 100.000 habitantes en Quilicura y 2.667,7 en Conchalí, superando el promedio nacional, lo que lleva a muchas familias a priorizar la protección física de sus hijos por sobre la presencialidad escolar.
+
+### 4.1.3. Análisis de entrevistas
+
+Con el propósito de profundizar en los factores que inciden en la elección de establecimiento y en los patrones de inasistencia escolar, se realizaron entrevistas a distintos actores del territorio. A continuación se presentan los principales hallazgos, comenzando por la perspectiva institucional del SLEP Los Libertadores, a la que se sumarán en una etapa posterior los testimonios recogidos en entrevistas con familias.
+
+#### 4.1.3.1. Perspectiva institucional del SLEP Los Libertadores
+
+La entrevista fue realizada a Paola Álvarez, asesora de la Dirección Ejecutiva del SLEP Los Libertadores [8], y permitió complementar el análisis cuantitativo con una mirada institucional sobre las causas de la baja matrícula y la inasistencia crónica en el territorio.
+
+**Matrícula y contexto general**
+
+Desde la perspectiva del SLEP, la caída de matrícula en el sector público no es un fenómeno exclusivo del territorio, sino que responde a una tendencia nacional agravada por el quiebre que generó la pandemia en las trayectorias educativas. A esto se suma un contexto demográfico desfavorable: con una tasa de natalidad de 1,2, la población en edad escolar se contrae, lo que exige estrategias focalizadas para llegar a los niños y niñas que aún no están matriculados. En este marco, el SLEP Los Libertadores lleva apenas 16 o 17 meses como sostenedor, lo que implica que parte de los desafíos actuales son también herencia de la gestión municipal anterior.
+
+**Perfil de las familias y estudiantes**
+
+Paola Álvarez confirmó y amplió el diagnóstico sociodemográfico del territorio. El índice de vulnerabilidad IVE alcanza el 78% en educación básica y el 77% en educación media. El 56,9% de los estudiantes son prioritarios y un 19% son preferentes, lo que refleja que el SLEP trabaja principalmente con familias en condiciones de alta vulnerabilidad social. Además, el 32% de los estudiantes son extranjeros y el 21% presenta alguna necesidad educativa especial, ya sea de carácter permanente o transitorio. Estos datos refuerzan la heterogeneidad cultural y socioeconómica identificada en el análisis demográfico, y configuran un perfil de familias con acceso más restringido a otras opciones del sistema educativo.
+
+**Causas de la baja matrícula y elección de establecimiento**
+
+Según la entrevistada, la baja matrícula responde a múltiples factores que no pueden reducirse a una causa lineal. Uno de ellos es el desconocimiento de la oferta educativa pública por parte de las familias: muchos apoderados simplemente ignoran qué establecimientos públicos existen en su barrio, lo que les impide tomar decisiones informadas. Otro factor es la percepción sobre las condiciones materiales de los establecimientos, donde la imagen de un colegio deteriorado puede inclinar la decisión hacia un establecimiento privado subvencionado con mejor infraestructura visible. Frente a esto, el SLEP ha apostado no solo por mejorar la imagen de sus escuelas, sino por comunicar el valor diferencial de la educación pública: su carácter inclusivo, su articulación con redes territoriales de salud y protección social, y sus programas de apoyo especializados como el PIE.
+
+**Causas de la inasistencia crónica**
+
+Respecto a la inasistencia, la entrevistada señaló que el SLEP se encuentra por debajo del umbral del 85% de asistencia establecido por el Ministerio de Educación como nivel crítico. Las causas identificadas son de distinta naturaleza. Por un lado, factores internos al establecimiento: cuando los estudiantes tienen experiencias positivas, se sienten acogidos y bien tratados, la asistencia mejora. El vínculo entre el docente y el estudiante, y el seguimiento activo de las ausencias por parte de la escuela, son elementos que inciden directamente en la regularidad. Por otro lado, factores externos al establecimiento: en contextos de alta vulnerabilidad, la asistencia implica resolver logísticas complejas de traslado y cuidado, y en enseñanza media algunos estudiantes deben trabajar o asumir roles de cuidado en sus hogares. Para abordar esta problemática, el SLEP implementará en 2026 el programa Un Buen Comienzo, de la Fundación Oportunidad, en 21 establecimientos con niveles parvularios, con el objetivo de instalar desde temprana edad hábitos de asistencia regular tanto en estudiantes como en sus familias.
+
+#### 4.1.3.2. Perspectiva de las familias
+
+Para complementar el análisis estadístico de la asistencia escolar con una dimensión cualitativa, se realizó una encuesta a 30 familias con hijos en edad escolar, con énfasis en las comunas de Quilicura y Conchalí. La muestra incluyó distintos tipos de establecimientos educacionales: 14 de colegios públicos, 13 de particulares subvencionados y 3 de particulares pagados. A continuación se sintetizan los principales hallazgos, organizados en torno a los factores culturales y socioeconómicos que inciden tanto en la elección del establecimiento como en la inasistencia grave.
+
+**Perfil del acompañante**
+
+En aproximadamente el 83% de los casos, la madre es la principal figura que acompaña al niño o niña en sus responsabilidades escolares, como tareas, reuniones de apoderados y comunicación con docentes. Solo en cuatro o cinco casos se menciona al padre o a ambos progenitores de manera equitativa. Este dato es relevante desde una perspectiva socioeconómica ya que en hogares donde la madre también trabaja a tiempo completo, el rol de acompañamiento recae de forma desproporcionada sobre una sola persona, lo que puede traducirse en menor capacidad de respuesta ante situaciones de inasistencia.
+
+**Factores de elección del establecimiento**
+
+Los motivos de elección se agrupan en tres categorías principales. En los colegios públicos predomina la proximidad geográfica («quedaba cerca de la casa»), lo que refleja que estas familias tienen menor movilidad y, por tanto, eligen por restricción más que por preferencia. En los establecimientos subvencionados y pagados, en cambio, el factor dominante es la calidad educativa percibida, entendida como un juicio construido socialmente a partir del entorno de conocidos. Un tercer factor transversal son las redes sociales y referencias («me lo recomendaron», «mis hijos anteriores estudiaron ahí»), especialmente relevante en colegios particulares.
+
+**Percepción pública versus particular**
+
+La imagen del colegio público está marcada por cuatro atributos negativos recurrentes: mala calidad de enseñanza (8 menciones), presencia de violencia, drogas y conductas antisociales (5 menciones), menor orden y disciplina (6 menciones) y escaso compromiso con los estudiantes (4 menciones). En contraposición, los colegios subvencionados son valorados por su mejor calidad educativa (11 menciones), mayor orden y disciplina (7 menciones), seguimiento más activo al alumno (5 menciones) y la posibilidad de libre elección sin sorteo (2 menciones). Estas percepciones se resumen en la Figura 1.
+
+Un hallazgo de especial relevancia es que la percepción negativa de los colegios públicos no descansa únicamente en indicadores académicos, sino que incorpora un componente de distinción social explícito: el uso de términos como «flaites», «delincuencia» o «ambiente malo» evidencia que la huida del sistema público obedece también a lógicas de clase que van más allá de la calidad pedagógica. Esto coincide con lo señalado por Canales, Bellei y Orellana [6] respecto a la estratificación social que produce la elección escolar en un sistema de mercado como el chileno.
+
+**Factores de inasistencia**
+
+Consultadas sobre las razones por las que un niño o niña falta reiteradamente a clases, las familias mencionaron cinco categorías (Figura 2). La enfermedad o problema de salud es, con diferencia, la razón más citada (18 menciones), seguida de problemas familiares o económicos (10 menciones), desmotivación o desánimo escolar (6 menciones), falta de compromiso del apoderado (5 menciones) y problemas de salud mental o emocional (2 menciones).
+
+Es importante distinguir entre el discurso declarado y los factores estructurales subyacentes. La enfermedad es la causa socialmente más «legítima» y, por tanto, la que más se menciona en primer lugar. No obstante, las categorías de problemas familiares y desmotivación revelan dinámicas más complejas, como hogares donde ambos padres trabajan y no hay con quién dejar al niño, contextos de vulnerabilidad económica que dificultan el transporte o la alimentación, y niños que no se sienten vinculados con la comunidad escolar. Cabe notar además que entre cuatro y cinco familias atribuyeron la inasistencia a la «flojera» del niño o a la «despreocupación» de los padres, lo que indica que una parte de la comunidad reproduce un discurso de responsabilidad individual que puede invisibilizar estas causas estructurales.
+
+**Percepción de gravedad y respuesta institucional**
+
+Frente a la pregunta de qué tan grave es que un niño o niña falte un par de días a la semana, el 67% de las familias lo considera grave o muy grave, el 20% matiza que depende de la situación y solo el 13% estima que no es tan grave si el alumno se pone al día (Figura 3). La razón principal que justifica la gravedad no es el incumplimiento normativo, sino la pérdida de la explicación directa del docente: «no es lo mismo conseguirse la materia a que el profesor te explique y resuelva tus dudas en clases» (María Daniela, Quilicura).
+
+Respecto a la respuesta del colegio, el 60% de las familias siente que el establecimiento sí realiza seguimiento activo de la asistencia, mediante llamadas telefónicas, correos electrónicos y exigencia de justificativos, mientras que un 23% señala que el colegio no realiza mayor gestión al respecto. Esta brecha es especialmente notable entre tipos de establecimiento, pues las familias de colegios subvencionados reportan con mayor frecuencia un acompañamiento proactivo, lo que podría incidir en que sus tasas de inasistencia grave sean menores que las de los colegios municipales.
+
+En síntesis, la perspectiva de las familias permite identificar tres factores de especial incidencia en la inasistencia grave. El primero es la concentración del acompañamiento escolar en la figura materna, que genera fragilidad cuando esta persona enfrenta otras demandas laborales o de cuidado. El segundo es la presencia de causas estructurales como la pobreza, la disfunción familiar y la desmotivación, que suelen quedar opacadas por el relato de la enfermedad como causa principal. El tercero es una brecha en la capacidad de seguimiento institucional entre colegios municipales y subvencionados, que puede retroalimentar el ciclo de inasistencia en los establecimientos con mayor vulnerabilidad socioeconómica.
+
+---
+
+## 4.2. Diagnóstico de la Oferta Educativa
+
+El SLEP administra 31 escuelas y liceos con 14.130 estudiantes matriculados en 2025 según la base oficial del Ministerio de Educación (SIGE, 2025), representando el 22,3% de los 63.373 estudiantes totales del territorio. El sector particular subvencionado concentra el 73,2% con 80 establecimientos, y el particular pagado el 4,5% restante [9]. Esta distribución es estructural: en Quilicura los establecimientos municipales ya representaban el 20,7% del total en 2022, frente al 75,9% de particulares subvencionados; en Conchalí, el 33,3% frente al 63,2%. La meta del PEL 2025-2031 es alcanzar el 28% de participación al sexto año de funcionamiento, lo que implica sumar aproximadamente 3.600 estudiantes adicionales sin que el territorio crezca en población.
+
+La caída de la matrícula del SLEP en escuelas y liceos, de 16.021 en 2022 a 14.259 en 2025, supera ampliamente la contracción general del territorio. Entre 2022 y 2024, la matrícula total de Quilicura disminuyó un 1,3% (de 43.751 a 43.165), mientras la del sector público cayó un 5,2% (de 7.071 a 6.707). En Conchalí, la matrícula total bajó un 4,2% (de 21.843 a 20.919) y la del sector público un 6,9% (de 8.187 a 7.620). A nivel nacional, la caída acumulada de matrícula fue de aproximadamente 0,4% en 2023 y 1,3% en 2024. La tasa de caída del SLEP supera en todos los años la tasa nacional, lo que evidencia que no todo se explica por demografía: existe un componente de pérdida de cuota de mercado que la contracción poblacional no alcanza a justificar.
+
+El análisis por nivel educativo permite precisar dónde se concentra el problema. La oferta del SLEP es predominantemente de educación básica: el 62,2% de la matrícula corresponde a Enseñanza Básica N/J (8.785 alumnos), mientras que la enseñanza media en sus distintas modalidades suma el 27,4% (3.673 alumnos). La Educación Parvularia aporta el 9,2% (1.299 alumnos) [10]. Esta última es la única modalidad con tendencia positiva, creció de 1.863 estudiantes en 2022 a 2.039 en 2025, lo que indica que las familias confían en la oferta inicial del SLEP pero esa confianza no se transfiere a la enseñanza básica. La transición parvularia–1º básico es el punto de fuga más probable: si la pérdida de matrícula se concentra en kínder y primeros años de básica, el problema es de captación (las familias eligen otro establecimiento desde el inicio); si se concentra en cursos intermedios, el problema es de retención.
+
+En cuanto a la distribución por establecimiento, los 31 colegios presentan una heterogeneidad de tamaño significativa. Los cinco con mayor matrícula son la Escuela Luis Cruz Martínez (1.295, Quilicura), el Liceo Polivalente Abdón Cifuentes (1.108, Conchalí), el Liceo Alberto Blest Gana (792, Conchalí), la Escuela Básica Ana Frank (783, Quilicura) y el Liceo Poeta Federico García Lorca (743, Conchalí), concentrando en conjunto el 36,0% de la matrícula total (5.021 alumnos). En el extremo opuesto, los cinco con menor matrícula son la Escuela Especial Humberto Aranda (87, Conchalí), la Escuela Básica Likán-Antai (184, Conchalí), el Liceo Alcalde Jorge Indo (241, Quilicura), la Escuela D-114 (250, Conchalí) y la Escuela UNESCO (267, Conchalí), sumando apenas 1.029 alumnos (7,3% del total). Los establecimientos de Quilicura tienden a ser más grandes que los de Conchalí, lo que es consistente con el perfil demográfico: Quilicura tiene una población más joven (19,1% entre 0 y 14 años, sobre el promedio regional de 17,3%) y mayor en términos absolutos.
+
+Desde la perspectiva de la demanda, el SAE 2024 muestra que el 70,1% de las primeras preferencias a nivel nacional se dirigen a establecimientos particulares subvencionados, y que uno de cada cuatro cupos en colegios SLEP o municipales queda vacío tras la asignación regular. Esto indica que el SLEP no enfrenta un problema de capacidad física sino de demanda: los estudiantes del territorio existen, pero postulan preferentemente a otros establecimientos. Solo el 49,7% de los postulantes es asignado a su primera preferencia, y el 77% no queda en ninguna de sus opciones, lo que implica que una fracción de la matrícula del SLEP corresponde a estudiantes que llegaron sin haberlo elegido, con menor adhesión desde el inicio.
+
+---
+
+## 4.3. Estudio de Posicionamiento y Competencia Territorial
+
+El SLEP Los Libertadores compite por matrícula en un territorio donde coexisten establecimientos municipales, particulares subvencionados y jardines infantiles de distintos operadores, y donde la decisión de matrícula es, ante todo, una decisión familiar influida por múltiples variables: percepción de calidad, condiciones materiales del establecimiento, cercanía geográfica y conocimiento de la oferta disponible. Como revelan tanto las entrevistas institucionales como la encuesta a familias, una parte significativa del problema de matrícula no radica en la propuesta educativa en sí misma, sino en su visibilidad y en la brecha entre los atributos que el SLEP efectivamente ofrece y los que las familias le reconocen.
+
+Frente a la oferta particular subvencionada, la distinción del SLEP no pasa por el precio sino por atributos cualitativos que las familias no siempre conocen: inclusión efectiva para estudiantes con NEE, articulación con la red pública de salud y protección social, protocolos de convivencia y seguridad, y una oferta educativa que por mandato legal no puede seleccionar ni excluir estudiantes. El análisis de competencias que sigue profundiza en estas capacidades; la presente sección se ocupa de caracterizar el entorno competitivo en que deben operar.
+
+### 4.3.1. Participación territorial y presión competitiva
+
+Con el fin de comprender el entorno competitivo en que opera el SLEP Los Libertadores, se realizó un análisis de la matrícula y dependencia de los establecimientos presentes en las comunas de Quilicura y Conchalí. Los resultados muestran que la principal competencia para el SLEP proviene de los establecimientos particulares subvencionados, los cuales concentran una proporción significativa de la matrícula en ambas comunas.
+
+En Quilicura, los establecimientos particulares subvencionados concentran aproximadamente 33.655 estudiantes, mientras que los establecimientos pertenecientes al SLEP reúnen cerca de 6.720 estudiantes (ver Figura 7). En Conchalí, los particulares subvencionados alcanzan una matrícula aproximada de 12.720 estudiantes, frente a 7.418 estudiantes asociados al SLEP (ver Figura 6). Estas cifras confirman que la educación particular subvencionada posee una participación considerablemente mayor dentro del territorio analizado [9], lo cual se enmarca en la distribución general de matrícula de los distintos Servicios Locales en régimen (ver Figura 8).
+
+Adicionalmente, se identificó una elevada cantidad de establecimientos educacionales en ambas comunas. Quilicura cuenta con 58 establecimientos, de los cuales 44 corresponden a particulares subvencionados (ver Figura 10), mientras que Conchalí posee 57 establecimientos (ver Figura 9), de los cuales 36 pertenecen a esta dependencia [9]. Esto evidencia que las familias disponen de múltiples alternativas educativas dentro del territorio, generando un contexto altamente competitivo para la captación y retención de estudiantes.
+
+### 4.3.2. Análisis de la propuesta de valor de la competencia
+
+El análisis de los establecimientos particulares subvencionados permitió identificar distintas estrategias de posicionamiento orientadas a segmentos similares de estudiantes y familias que aquellos atendidos por el SLEP.
+
+Por una parte, establecimientos como Hellen's College destacan una formación integral basada en convivencia escolar, desarrollo valórico, uso de tecnologías y habilidades para la vida. Por otra parte, colegios como Manquecura Valle Lo Campino construyen su propuesta de valor sobre atributos como inglés intensivo, aprendizaje digital, liderazgo, ciudadanía global y programas diferenciadores asociados a innovación y emprendimiento.
+
+Asimismo, el Colegio San Carlos de Quilicura enfatiza elementos asociados a excelencia académica, altas expectativas y resultados educacionales [12], mientras que el Liceo Polivalente Abdón Cifuentes se posiciona desde la formación técnico-profesional, la empleabilidad y la continuidad de estudios [13]. En conjunto, estos establecimientos compiten mediante atributos claramente identificables para las familias, tales como infraestructura, identidad institucional, programas diferenciadores, tecnología, segundo idioma, preparación para la educación superior y oportunidades de inserción laboral. Un aspecto relevante es que estas propuestas de valor son comunicadas de manera explícita y consistente, permitiendo que las familias asocien rápidamente cada establecimiento con ciertos beneficios o resultados esperados.
+
+En contraste, la propuesta de valor del SLEP Los Libertadores se fundamenta principalmente en atributos asociados a la educación pública, tales como la inclusión, el acceso universal, la cobertura territorial y el acompañamiento de las trayectorias educativas de los estudiantes. Asimismo, su rol como servicio público le permite articular apoyos con otras instituciones del Estado y garantizar el acceso a una educación sin mecanismos de selección o exclusión. Sin embargo, a diferencia de varios establecimientos particulares subvencionados analizados, estos atributos no siempre son comunicados de manera explícita hacia las familias, lo que podría limitar su capacidad de diferenciación dentro del mercado educativo local.
+
+### 4.3.3. Comparación de resultados académicos
+
+Complementariamente, se realizó una comparación exploratoria de resultados PAES entre establecimientos pertenecientes al SLEP Los Libertadores y algunos de sus principales competidores particulares subvencionados [14]. Los resultados muestran que los establecimientos particulares subvencionados obtienen, en promedio, mejores resultados en todas las pruebas evaluadas.
+
+**Tabla 1: Promedio de resultados PAES por tipo de establecimiento**
+
+| Prueba | Promedio públicos/SLEP | Promedio competencia | Diferencia |
+|:---|:---|:---|:---|
+| Competencia Lectora | 522,1 | 600,8 | +78,7 |
+| Competencia Matemática 1 (M1) | 546,4 | 644,8 | +98,4 |
+| Competencia Matemática 2 (M2) | 400,4 | 420,9 | +20,6 |
+| Historia y Ciencias Sociales | 446,0 | 502,1 | +56,1 |
+| Ciencias | 395,3 | 465,1 | +69,8 |
+
+Las mayores diferencias se observan en Competencia Matemática 1 y Competencia Lectora, donde las brechas alcanzan aproximadamente 98 y 79 puntos, respectivamente. Asimismo, se observan diferencias relevantes en Historia y Ciencias. Si bien estos resultados no explican por sí solos la elección de las familias, constituyen una señal de calidad académica que probablemente influye en la percepción y preferencia por determinados establecimientos.
+
+### 4.3.4. Hallazgo estratégico
+
+A partir de la evidencia recopilada, se observa que la competencia del SLEP no se limita únicamente a la existencia de una mayor cantidad de establecimientos, sino que involucra también propuestas de valor diferenciadas y, en algunos casos, mejores indicadores académicos. En este contexto, el desafío estratégico del SLEP parece estar asociado no solo a fortalecer aquellos atributos valorados por las familias, sino también a comunicar de manera más efectiva las fortalezas propias de la educación pública, tales como la inclusión, el acceso universal, el vínculo territorial y el acompañamiento integral de las trayectorias.
+
+En consecuencia, la evidencia sugiere que el problema de posicionamiento del SLEP no se reduce a una falta de oferta educativa, sino a una brecha entre el valor que el Servicio efectivamente entrega y el valor que las familias perciben frente a las alternativas particulares subvencionadas del territorio. Esta brecha resulta clave para explicar la pérdida de matrícula y refuerza la necesidad de diseñar una estrategia de captación y retención que combine mejora de atributos, comunicación efectiva y fortalecimiento de la confianza.
+
+---
+
+## 4.4. Diagnóstico de las competencias centrales del SLEP
+
+El SLEP Los Libertadores se encuentra en su segundo año de operación, momento clave en que la exigencia institucional es cualitativamente distinta a la del año anterior, marcado por asegurar la continuidad del servicio post-traspaso. Esta transición desde la instalación hacia la mejora, en un territorio de alta vulnerabilidad, constituye el marco del siguiente diagnóstico de competencias organizacionales, levantado directamente con la Dirección Ejecutiva.
+
+En primer lugar destaca la profesionalización de la gestión educativa, entendida como la capacidad de administrar y acompañar técnicamente a los establecimientos desde un enfoque especializado. Esta competencia se sustenta en la existencia de equipos con experiencia en gestión educativa y en un foco institucional centrado exclusivamente en la educación: un cuerpo docente ubicado en los tramos de Avanzado, Experto I o Experto II, superando la meta nacional del 47%, y un acompañamiento técnico-pedagógico permanente y diferenciado según el diagnóstico de cada comunidad escolar.
+
+En segundo lugar se identifica la gestión sistémica del servicio educativo como una competencia distintiva: el SLEP ofrece más que solo una «silla en una sala», articulando un sistema conectado con la red pública en sus distintas dimensiones. En salud, mantiene conexión permanente con CESFAM, COSAM y redes de salud municipal. En protección de la infancia, coordina con Oficinas Locales de la Niñez (OLN), OPD y Mejor Niñez, además de Carabineros y oficinas de cultura, juventud y migrantes. Esta articulación se complementa con la atracción de recursos externos mediante convenios con universidades y fundaciones para fortalecer el liderazgo directivo y la lectoescritura, capacidades que escuelas aisladas difícilmente podrían gestionar por sí solas.
+
+En línea con lo anterior, el SLEP ha desarrollado un enfoque en inclusión y diversidad con protocolos y capacidades específicas para atender una matrícula de alta complejidad:
+
+- Atención a la diversidad con programas y personal especializado para estudiantes con Necesidades Educativas Especiales (NEE), con foco en el espectro autista.
+- Gestión de la interculturalidad, con capacidades demostradas para integrar al más del 32% de estudiantes extranjeros que componen la matrícula.
+- Aulas de Reingreso con duplas especializadas (docente y psicólogo/asistente social) para recuperar trayectorias educativas de estudiantes en situación de calle o consumo de drogas.
+
+Por último, a diferencia de otros modelos de administración educativa, el SLEP integra legalmente a la comunidad en la toma de decisiones a través de una gobernanza participativa. El Comité Directivo Local y el Consejo Local de Educación Pública se reúnen hasta ocho y seis veces al año respectivamente con la Dirección Ejecutiva, y han comenzado a generar propuestas concretas: desde coordinación en proyectos de infraestructura hasta iniciativas de formación para centros de padres. El desafío pendiente es avanzar desde la comunicación hacia la participación efectiva, pues el propio SLEP reconoce que la relación con las familias es aún más informativa que deliberativa.
+
+---
+
+# 5. Anexos
+
+## Figura 1: Percepción pública versus particular subvencionado
+
+**Descripción del gráfico:**  
+La figura contiene dos gráficos de barras horizontales titulados «Percepciones de las familias: colegios públicos vs. particulares subvencionados».
+
+- **Gráfico izquierdo — Percepción negativa del colegio público:**  
+  - Mala enseñanza: 8 menciones  
+  - Violencia / drogas: 5 menciones  
+  - Menor orden y disciplina: 6 menciones  
+  - Poco compromiso con alumnos: 4 menciones  
+
+- **Gráfico derecho — Razones de preferencia del colegio particular subvencionado:**  
+  - Mejor calidad educativa: 11 menciones  
+  - Mayor orden y disciplina: 7 menciones  
+  - Seguimiento activo al alumno: 5 menciones  
+  - Libre elección (sin sorteo): 2 menciones  
+
+*Elaboración propia a partir de encuestas y entrevistas (n = 30), mayo de 2026.*
+
+---
+
+## Figura 2: Factores de inasistencia grave
+
+**Descripción del gráfico:**  
+Gráfico de barras horizontales titulado «Razones de inasistencia escolar según familias encuestadas».
+
+- Enfermedad / problema de salud: 18 menciones  
+- Problemas familiares o económicos: 10 menciones  
+- Desmotivación o desánimo: 6 menciones  
+- Falta de compromiso del apoderado: 5 menciones  
+- Salud mental o emocional: 2 menciones  
+
+*Nota: Las categorías no son mutuamente excluyentes. Una familia podía indicar más de una razón. Elaboración propia (n = 30), mayo de 2026.*
+
+---
+
+## Figura 3: Percepción de gravedad y respuesta
+
+**Descripción del gráfico:**  
+La figura contiene dos gráficos circulares tipo donut titulados «Percepción de las familias sobre la gravedad y respuesta institucional».
+
+- **Gráfico izquierdo — ¿Qué tan grave es que un niño/a falte?**  
+  - Grave o muy grave: 67% (20 familias)  
+  - Depende de la situación: 20% (6 familias)  
+  - No tan grave: 13% (4 familias)  
+
+- **Gráfico derecho — ¿El colegio apoya ante la inasistencia?**  
+  - Sí apoya: 60% (18 familias)  
+  - No o muy poco: 23% (7 familias)  
+  - Parcialmente: 17% (5 familias)  
+
+*Elaboración propia (n = 30), mayo de 2026.*
+
+---
+
+## Figura 4: Diagnóstico de la Oferta Educativa
+
+**Descripción del gráfico:**  
+La figura contiene dos gráficos.
+
+- **Gráfico izquierdo — Participación de mercado 2025 (Conchalí + Quilicura):**  
+  Gráfico circular tipo donut con tres segmentos:  
+  - SLEP: 22,3%  
+  - Particular subvencionado: 73,2%  
+  - Particular pagado: 4,5%  
+
+- **Gráfico derecho — Matrícula SLEP por nivel educativo, 2025 (Total: 14.130 estudiantes):**  
+  Gráfico de barras horizontales:  
+  - Básica N/J: 8.785 (62,2%)  
+  - Media HC N/J: 2.475 (17,5%)  
+  - Parvularia: 1.299 (9,2%)  
+  - Media TP N/J: 702 (5,0%)  
+  - Media HC Ad.: 496 (3,5%)  
+  - Básica Ad.: 227 (1,6%)  
+  - Ed. Especial: 146 (1,0%)  
+
+*Elaboración propia a partir de Mineduc SIGE 2025.*
+
+---
+
+## Figura 5: Heterogeneidad tamaño entre establecimientos SLEP-2025
+
+**Descripción del gráfico:**  
+La figura contiene dos gráficos de barras horizontales.
+
+- **Gráfico izquierdo — Top 5: Mayor matrícula:**  
+  - Escuela Luis Cruz Martínez: 1.295 (Quilicura)  
+  - Liceo Poliv. Abdón Cifuentes: 1.108 (Conchalí)  
+  - Liceo Alberto Blest Gana: 792 (Conchalí)  
+  - Escuela Básica Ana Frank: 783 (Quilicura)  
+  - Liceo Poeta Federico García Lorca: 743 (Conchalí)  
+
+- **Gráfico derecho — Top 5: Menor matrícula:**  
+  - Escuela Esp. Humberto Aranda: 87 (Conchalí)  
+  - Escuela Básica Likán-Antai: 184 (Conchalí)  
+  - Liceo Alcalde Jorge Indo: 241 (Quilicura)  
+  - Escuela D-114: 250 (Conchalí)  
+  - Escuela UNESCO: 267 (Conchalí)  
+
+*Elaboración propia a partir de Mineduc SIGE 2025.*
+
+---
+
+## Figura 6: Participación territorial y presión competitiva (Conchalí)
+
+**Descripción del gráfico:**  
+Dashboard/infografía con datos de la comuna de Conchalí, proveniente del Centro de Estudios Mineduc (CEM).
+
+- **Evolución dependencia (2011-2025):** Gráfico de líneas que muestra la tendencia histórica de matrícula por dependencia (Particular Subvencionado, Particular Pagado, Servicio Local de Educación).
+- **Dependencia 2025:** Gráfico de barras horizontales:
+  - Particular Subvencionado: 12.728
+  - Particular Pagado: 182
+  - Servicio Local de Educación: 7.410
+- **Proporción dependencia:** Gráfico circular tipo donut donde el sector subvencionado es la porción mayoritaria.
+- **Detalle de matrícula 2025 por comuna:** Tabla resumen con los totales anteriores y matrícula total 20.312.
+- **Detalle de matrícula 2025 por Deptos. Provinciales:** Tabla con desglose para Santiago Norte.
+
+---
+
+## Figura 7: Participación territorial y presión competitiva (Quilicura)
+
+**Descripción del gráfico:**  
+Dashboard/infografía con datos de la comuna de Quilicura, proveniente del Centro de Estudios Mineduc (CEM). Estructura similar a la Figura 6.
+
+- **Evolución dependencia (2011-2025):** Gráfico de líneas histórico.
+- **Dependencia 2025:** Gráfico de barras horizontales:
+  - Particular Subvencionado: 33.655
+  - Particular Pagado: 2.686
+  - Servicio Local de Educación: 6.720
+- **Proporción dependencia:** Gráfico circular tipo donut.
+- **Detalle de matrícula 2025 por comuna:** Tabla resumen con matrícula total 43.061.
+- **Detalle de matrícula 2025 por Deptos. Provinciales:** Tabla con desglose para Santiago Norte.
+
+---
+
+## Figura 8: Distribución de matrícula de los SLEP en régimen
+
+**Descripción del gráfico:**  
+Dashboard del CEM titulado «SLEP en régimen 2025».
+
+- **Mapa de calor:** Mapa de Chile con la Región Metropolitana destacada.
+- **Matrícula por SLEP:** Gráfico de barras verticales con los siguientes valores aproximados:
+  - Barrancas: ~20.991
+  - Del Pino: ~28.767
+  - Gabriela Mistral: ~12.150
+  - Los Libertadores: ~14.130
+  - Santa Corina: ~27.842
+  - Santa Rosa: ~18.272
+- **Detalle de matrícula 2025 por nivel de enseñanza por SLEP:** Tabla con desglose por Básica, Básica adultos/as, Ed. Parvularia, Educación Especial, Media HC, Media HC adultos/as, Media TP, Media TP adultos/as, y totales por SLEP.
+- **Gráficos demográficos:** 
+  - Género: Hombres ~57.169 (46,8%), Mujeres ~64.052 (52,2%), Sin información ~1.931 (1,6%).
+  - Zona: Urbana ~119.983 (97,4%), Rural ~3.169 (2,6%).
+- **Resumen inferior:** Matrícula Total 2025: 122.152; Deptos. Provinciales: 6; Establecimientos 2025: 306.
+
+---
+
+## Figura 9: Cantidad de establecimientos educacionales por dependencia en Conchalí
+
+**Descripción del gráfico:**  
+Dashboard del DEPROV para la comuna de Conchalí, año 2024.
+
+- **Indicadores principales:**
+  - Cantidad de establecimientos 2024: 57
+  - Matrícula total 2024: 20.919
+  - Ruralidad: 57 (100%) Urbano
+  - Convenio PIE: 30 sí (52,63%), 27 no (47,37%)
+  - Programa PACE: 56 no (98,25%), 1 sí (1,75%)
+
+- **Establecimientos por dependencia (gráfico de barras):**
+  - Municipal: 19
+  - Particular Subvencionado: 36
+  - Particular Pagado: 2
+
+- **Establecimientos por comuna (gráfico de barras comparativo de la DEPROV Santiago Norte):**
+  - Colina: 69
+  - Recoleta: 68
+  - Quilicura: 58
+  - Conchalí: 57
+  - Lampa: 57
+  - Independencia: 36
+  - Huechuraba: 27
+  - Tiltil: 19
+
+---
+
+## Figura 10: Cantidad de establecimientos educacionales por dependencia en Quilicura
+
+**Descripción del gráfico:**  
+Dashboard del DEPROV para la comuna de Quilicura, año 2024.
+
+- **Indicadores principales:**
+  - Cantidad de establecimientos 2024: 58
+  - Matrícula total 2024: 43.061
+  - Ruralidad: 57 (98,28%) Urbano, 1 (1,72%) Rural
+  - Convenio PIE: 36 sí (62,07%), 22 no (37,93%)
+  - Programa PACE: 57 no (98,28%), 1 sí (1,72%)
+
+- **Establecimientos por dependencia (gráfico de barras):**
+  - Municipal: 12
+  - Particular Subvencionado: 44
+  - Particular Pagado: 2
+
+- **Establecimientos por comuna (gráfico de barras comparativo de la DEPROV Santiago Norte):** Misma estructura que Figura 9, destacando Quilicura con 58 establecimientos.
+
+---
+
+# Referencias
+
+[1] Servicio Local de Educación Pública Los Libertadores, "Plan estratégico local 2025-2031", rep. téc., Ministerio de Educación, Gobierno de Chile, 2025. Resolución Exenta No 402.
+
+[2] Servicio Local de Educación Pública Los Libertadores, "Plan anual local (PAL) 2026: Resumen ejecutivo y proyecciones de dotación", rep. téc., Ministerio de Educación, Gobierno de Chile, 2026.
+
+[3] Álvarez, P., 2025. Comunicación personal.
+
+[4] Biblioteca del Congreso Nacional de Chile, "Reporte estadístico comunal 2025: Quilicura", 2025, https://www.bcn.cl/siit/reportescomunales/comunas_v.html?anno=2025&idcom=13125. Consultado el 27 de mayo de 2026.
+
+[5] Biblioteca del Congreso Nacional de Chile, "Reporte estadístico comunal 2025: Conchalí", 2025, https://www.bcn.cl/siit/reportescomunales/comunas_v.html?anno=2025&idcom=13104. Consultado el 27 de mayo de 2026.
+
+[6] Canales, M., Bellei, C., y Orellana, V., "¿Por qué elegir una escuela privada subvencionada? Sectores medios emergentes y elección de escuela en un sistema de mercado", Estudios Pedagógicos, vol. 42, no. 3, pp. 89–109, 2016, doi:10.4067/S0718-07052016000400006.
+
+[7] Gatica, S., "Académico de la UCSC explica los factores detrás del alarmante ausentismo escolar en Chile", 2024, https://educacion.ucsc.cl/noticias/academico-de-la-ucsc-explica-los-factores-detras-del-alarmante-ausentismo-escolar-en-chile/. Facultad de Educación, Centro de Investigación en Educación y Desarrollo (CIEDE).
+
+[8] Álvarez, P., "Entrevista a asesora de la dirección ejecutiva del SLEP los libertadores". Entrevista realizada el 22 de mayo de 2026. Transcripción en poder de los autores, 2026.
+
+[9] Centro de Estudios Mineduc, "Cem interactivo: datos de establecimientos educacionales por dependencia administrativa", 2025, https://app.powerbi.com/view?r=eyJrIjoiMjE5NDAyYjgtYjdhOC00OTNhLTgyODctMWIzZTRhYjBmNjgwIiwidCI6IjJlNGNmZTUwLTA1ODAtNDE0MC05Mzg3LTRlY2RlMzlkZWY2MCIsImMiOjR9. Consultado el 28 de mayo de 2026.
+
+[10] Centro de Estudios Mineduc, "Cem interactivo: datos de establecimientos educacionales por nivel de enseñanza", 2025, https://app.powerbi.com/view?r=eyJrIjoiMDI0MGI5MWUtNzVmMy00NTk0LTg0NzUtMWJkZmYwZTI0NGJkIiwidCI6IjJlNGNmZTUwLTA1ODAtNDE0MC05Mzg3LTRlY2RlMzlkZWY2MCIsImMiOjR9. Consultado el 28 de mayo de 2026.
+
+[11] Colegio Manquecura Valle Lo Campino, "Proyecto educativo", 2026, https://www.manquecura.cl/valle-lo-campino/proyecto-educativo/. Consultado el 28 de mayo de 2026.
+
+[12] Colegio San Carlos de Quilicura, "Sitio web institucional", 2026, https://colegiosancarlosquilicura.cl/. Consultado el 28 de mayo de 2026.
+
+[13] Liceo Polivalente Abdón Cifuentes, "Sitio web institucional", 2026, https://liceoprofesional.cl/. Consultado el 28 de mayo de 2026.
+
+[14] Departamento de Evaluación, Medición y Registro Educacional, "Estadística de resultados y puntajes por establecimiento", 2026, https://colegios.demre.cl/estadistica-resultados-puntajes. Consultado el 28 de mayo de 2026.
