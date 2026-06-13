@@ -13,10 +13,14 @@ website:
     left:
       - text: "Inicio"
         href: index.qmd
+      - text: "Instructivo"
+        href: instructivo.qmd
       - text: "Informe 2"
         href: informe.qmd
       - text: "Feedback"
         href: feedback.qmd
+      - text: "Plan de trabajo"
+        href: plan.qmd
       
 
   page-footer:
