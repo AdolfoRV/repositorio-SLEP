@@ -1,0 +1,25 @@
+# Quarto output
+_site/
+.quarto/
+**/*.quarto_ipynb
+
+# Cache de ejecución
+*_cache/
+*_files/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/

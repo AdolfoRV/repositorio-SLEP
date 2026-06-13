@@ -1,0 +1,52 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Proyecto SLEP"
+  description: "Notas de feedback e informe del proyecto semestral con SLEP Los Libertadores."
+  site-url: "https://adolforv.github.io/proyecto-slep/"
+  repo-url: "https://github.com/adolforv/proyecto-slep"
+  repo-actions: [edit, issue]
+
+  navbar:
+    left:
+      - text: "Inicio"
+        href: index.qmd
+      - text: "Informe 2"
+        href: informe.qmd
+      - text: "Feedback"
+        href: feedback.qmd
+      
+
+  page-footer:
+    left: |
+      Made with [Quarto](https://quarto.org) · Universidad de Chile
+
+  back-to-top-navigation: true
+
+format:
+  html:
+    theme:
+      light: [flatly, styles.scss]
+      dark: [darkly, styles.scss]
+    toc: true
+    toc-depth: 3
+    toc-title: "En esta página"
+    code-fold: true
+    code-summary: "Mostrar código"
+    code-tools: true
+    code-copy: true
+    highlight-style: github
+    mainfont: "IBM Plex Sans"
+    monofont: "IBM Plex Mono"
+    smooth-scroll: true
+    anchor-sections: true
+    footnotes-hover: true
+    link-external-icon: true
+    link-external-newwindow: true
+
+execute:
+  freeze: auto
+  warning: false
+  message: false
