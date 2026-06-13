@@ -1,0 +1,39 @@
+---
+title: "Inicio"
+page-layout: full
+toc: false
+---
+
+```{=html}
+<div class="hero-section">
+  <div class="hero-tag">Universidad de Chile · Proyecto Semestral</div>
+  <h1>Proyecto con<br><span>SLEP Los Libertadores</span></h1>
+  <p class="hero-desc">
+    Documentación del proyecto semestral: notas de feedback de reuniones, avances e informe final.
+  </p>
+</div>
+
+<div class="section-header"><h2>Contenidos</h2></div>
+<div class="course-grid">
+  <a href="informe.html" class="course-card">
+    <span class="course-title">Informe</span>
+    <span class="course-desc">Documento principal del proyecto: diagnóstico, propuesta y resultados.</span>
+  </a>
+  <a href="instructivo.html" class="course-card">
+    <span class="course-title">Instructivo</span>
+    <span class="course-desc">Instructivos de informes del proyecto.</span>
+  </a>
+  <a href="feedback.html" class="course-card">
+    <span class="course-title">Feedback</span>
+    <span class="course-desc">Notas y observaciones recibidas en reuniones y revisiones del proyecto.</span>
+  </a>
+  <a href="asignacion-informe-final.html" class="course-card">
+    <span class="course-title">Asignación Informe Final</span>
+    <span class="course-desc">Detalles sobre la asignación y entrega del informe final del proyecto.</span>
+  </a>
+  <a href="plan.html" class="course-card">
+    <span class="course-title">Plan de Trabajo</span>
+    <span class="course-desc">Detalles sobre el plan de trabajo del proyecto.</span>
+  </a>
+</div>
+```
