@@ -5,8 +5,8 @@ project:
 website:
   title: "Proyecto SLEP"
   description: "Notas de feedback e informe del proyecto semestral con SLEP Los Libertadores."
-  site-url: "https://adolforv.github.io/proyecto-slep/"
-  repo-url: "https://github.com/adolforv/proyecto-slep"
+  site-url: "https://adolforv.github.io/repositorio-SLEP/"
+  repo-url: "https://github.com/adolforv/repositorio-SLEP"
   repo-actions: [edit, issue]
 
   navbar:
