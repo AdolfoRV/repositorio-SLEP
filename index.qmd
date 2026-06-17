@@ -27,6 +27,10 @@ toc: false
     <span class="course-title">Feedback</span>
     <span class="course-desc">Notas y observaciones recibidas en reuniones y revisiones del proyecto.</span>
   </a>
+  <a href="reunion-auxiliar.html" class="course-card">
+    <span class="course-title">Reunion Auxiliar</span>
+    <span class="course-desc">Punteo de la reunión auxiliar para la propuesta y defensa del proyecto.</span>
+  </a>
   <a href="asignacion-informe-final.html" class="course-card">
     <span class="course-title">Asignación Informe Final</span>
     <span class="course-desc">Detalles sobre la asignación y entrega del informe final del proyecto.</span>
