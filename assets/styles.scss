@@ -60,7 +60,7 @@ $headings-line-height:   1.25;
   --bs-table-border-color:   #{$light-border};
   --bs-card-bg:              #{$light-bg-secondary};
   --bs-card-border-color:    #{$light-border};
-  --bs-nav-link-color:       #{$light-text};
+  --bs-nav-link-color:       #{$light-bg-primary};
   --bs-nav-link-hover-color: #{$light-accent};
   --bs-navbar-color:         #{$light-text};
   --bs-navbar-hover-color:   #{$light-accent};
@@ -96,7 +96,7 @@ body.quarto-dark {
   --bs-table-border-color:   #{$dark-border};
   --bs-card-bg:              #{$dark-bg-secondary};
   --bs-card-border-color:    #{$dark-border};
-  --bs-nav-link-color:       #{$dark-text};
+  --bs-nav-link-color:       #{$dark-bg-primary};
   --bs-nav-link-hover-color: #{$dark-accent};
   --bs-navbar-color:         #{$dark-text};
   --bs-navbar-hover-color:   #{$dark-accent};
@@ -197,7 +197,7 @@ h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); }
 h2 { font-size: clamp(1.45rem, 3vw, 1.85rem); }
 h3 { font-size: clamp(1.15rem, 2.5vw, 1.4rem); }
 
-p, span, label, strong, em, small {
+p {
   color: var(--text-primary);
 }
 
@@ -273,8 +273,8 @@ td {
 .navbar,
 .navbar-brand,
 #quarto-header {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
+  // background-color: var(--bg-primary);
+  color: var(--text-accent);
 }
 
 .nav-link {
@@ -326,7 +326,7 @@ td {
 // ─── Buttons ───────────────────────────────────────────────────────────────
 .btn {
   color: var(--text-primary);
-  border-color: var(--border);
+  // border-color: var(--border);
   background-color: transparent;
 }
 
