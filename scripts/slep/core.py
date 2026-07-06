@@ -20,9 +20,8 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table
 
-from .constants import RE_TIPO, RE_INST, RE_RESOL, RE_ESTABLECIMIENTO, AFP_MAP
+from .constants import RE_TIPO, RE_INST, RE_RESOL, RE_ESTABLECIMIENTO, AFP_MAP, MESES_MAP
 from .text_utils import norm, norm_rut, get_by_any
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CLASIFICADORES
@@ -144,6 +143,102 @@ def generar_listas_canonicas(hojas_hechos, re_tipo, re_inst):
         _gen(("Institucion Salud", "Institucion Salud"), re_inst),
         _gen(("Resolucion Medica", "Resolucion Medica", "Estado"), RE_RESOL),
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXTRACTOR DE MONTOS DOBLES (Sistema / Pagado)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def extraer_montos_dobles(headers, row):
+    """
+    Extrae los dos bloques de montos (Sistema Dep/Netcore  vs  Pagado FONASA/ISAPRE)
+    adaptándose a la estructura de cada hoja (2024, 2025 o 2026).
+
+    Devuelve dict con:
+      monto_subsidio_sistema, monto_cotizacion_previsional_sistema,
+      monto_previsional_salud_sistema, total_sistema,
+      monto_subsidio_pagado, monto_cotizacion_previsional_pagado,
+      monto_previsional_salud_pagado, total_pagado
+    """
+    h_norm = [str(h).strip().lower() if h else "" for h in headers]
+
+    def find_all(substr):
+        return [i for i, h in enumerate(h_norm) if substr in h]
+
+    def find_first(substr):
+        idxs = find_all(substr)
+        return idxs[0] if idxs else None
+
+    def find_second(substr):
+        idxs = find_all(substr)
+        return idxs[1] if len(idxs) > 1 else None
+
+    def val(idx):
+        if idx is None or idx >= len(row):
+            return None
+        v = row[idx]
+        if v is None:
+            return None
+        try:
+            return float(v)
+        except (ValueError, TypeError):
+            return v
+
+    # LM-2025/2026 usan 'AFP' y 'SALUD' como columnas de montos en el primer bloque,
+    # mientras que LM-2024 usa 'cotizacion previsional' directamente.
+    # Buscamos una columna exactamente llamada 'afp' (sin puntos) y 'salud'.
+    tiene_afp_monto = any(h == "afp" for h in h_norm)
+    tiene_salud_monto = any(h == "salud" for h in h_norm)
+
+    if tiene_afp_monto and tiene_salud_monto:
+        # ── Patrón 2025 / 2026 ──
+        # Primer bloque (Sistema): Monto de Subsidio | AFP | AFC | SALUD | Total
+        # Segundo bloque (Pagado): Monto de Subsidio | Monto cotizacion previsional | Monto Previsional Salud | Total / Total Recuperado
+        idx_sub_sist = find_first("monto de subsidio")
+        idx_afp      = next((i for i, h in enumerate(h_norm) if h == "afp"), None)
+        idx_salud    = next((i for i, h in enumerate(h_norm) if h == "salud"), None)
+        idx_total_sist = find_first("total")
+
+        idx_sub_pag  = find_second("monto de subsidio")
+        idx_cot_pag  = find_first("cotizacion previsional")
+        idx_prev_pag = find_first("monto previsional salud")
+        # El total del segundo bloque puede llamarse 'Total' o 'Total Recuperado'
+        idx_total_pag = find_first("total recuperado") or find_second("total")
+
+        return {
+            "monto_subsidio_sistema": val(idx_sub_sist),
+            "monto_cotizacion_previsional_sistema": val(idx_afp),
+            "monto_previsional_salud_sistema": val(idx_salud),
+            "total_sistema": val(idx_total_sist),
+            "monto_subsidio_pagado": val(idx_sub_pag),
+            "monto_cotizacion_previsional_pagado": val(idx_cot_pag),
+            "monto_previsional_salud_pagado": val(idx_prev_pag),
+            "total_pagado": val(idx_total_pag),
+        }
+    else:
+        # ── Patrón 2024 ──
+        # Primer bloque (Sistema): Monto de Subsidio | Monto cotizacion previsional | Monto Previsional Salud | Total
+        # Segundo bloque (Pagado): idem, segunda ocurrencia
+        idx_sub_sist = find_first("monto de subsidio")
+        idx_cot_sist = find_first("cotizacion previsional")
+        idx_prev_sist = find_first("monto previsional salud")
+        idx_total_sist = find_first("total")
+
+        idx_sub_pag = find_second("monto de subsidio")
+        idx_cot_pag = find_second("cotizacion previsional")
+        idx_prev_pag = find_second("monto previsional salud")
+        idx_total_pag = find_second("total")
+
+        return {
+            "monto_subsidio_sistema": val(idx_sub_sist),
+            "monto_cotizacion_previsional_sistema": val(idx_cot_sist),
+            "monto_previsional_salud_sistema": val(idx_prev_sist),
+            "total_sistema": val(idx_total_sist),
+            "monto_subsidio_pagado": val(idx_sub_pag),
+            "monto_cotizacion_previsional_pagado": val(idx_cot_pag),
+            "monto_previsional_salud_pagado": val(idx_prev_pag),
+            "total_pagado": val(idx_total_pag),
+        }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -329,6 +424,9 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
             if resol_estado not in ("OK", "Vacio") and not str(resol_estado).startswith("LEGACY"):
                 estado_migracion.append("Resolucion Medica: " + resol_estado)
 
+            # ── Extraer ambos bloques de montos ──
+            montos = extraer_montos_dobles(headers, row)
+
             salida.append({
                 "rut": rut or (norm_rut(rut_raw) or ""),
                 "nombre": func["nombre"] if func else (nombre_raw or ""),
@@ -344,10 +442,7 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                 "afp": afp_canon or "No Aplica",
                 "tasa_afp": tasa or 0,
                 "resolucion_medica": resol_canon,
-                "monto_subsidio": get_by_any(headers, row, "Monto de Subsidio"),
-                "monto_cotizacion_previsional": get_by_any(headers, row, "Monto cotizacion previsional"),
-                "monto_previsional_salud": get_by_any(headers, row, "Monto Previsional Salud "),
-                "total": get_by_any(headers, row, "Total", "Total Recuperado"),
+                **montos,
                 "observaciones": " | ".join(
                     str(x) for x in [
                         get_by_any(headers, row, "Observaciones"),
@@ -359,6 +454,59 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
             })
 
     return salida, nuevos_establecimientos
+
+
+def migrar_descuentos(hojas_hechos):
+    """Extrae las columnas 'MONTO DESCONTADO MES AÑO' de todas las hojas LM
+    y devuelve una lista de diccionarios para Hechos_Descuentos."""
+    descuentos = []
+    re_desc = re.compile(r"MONTO\s+DESCONTADO\s+(\w+)\s+(\d{4})", re.IGNORECASE)
+
+    for name, ws, hrow, headers in hojas_hechos:
+        # 1) Detectar qué columnas son de descuento y a qué período corresponden
+        desc_cols = []   # [(índice_en_row, periodo YYYY-MM), ...]
+        for idx, h in enumerate(headers):
+            if h and isinstance(h, str):
+                m = re_desc.match(h.strip())
+                if m:
+                    mes_nombre = m.group(1).upper()
+                    anio = m.group(2)
+                    mes_num = MESES_MAP.get(mes_nombre)
+                    if mes_num:
+                        desc_cols.append((idx, f"{anio}-{mes_num}"))
+
+        if not desc_cols:
+            continue
+
+        # 2) Recorrer filas y extraer valores no nulos / != 0
+        for r in range(hrow + 1, ws.max_row + 1):
+            row = [ws.cell(r, i + 1).value for i in range(len(headers))]
+            rut_raw = get_by_any(headers, row, "Rut")
+            folio = get_by_any(headers, row, "Folio licencia", "Folio Minsal")
+            rut = norm_rut(rut_raw) if rut_raw else ""
+
+            # Si no hay ni RUT ni Folio, saltamos la fila
+            if not rut and not folio:
+                continue
+
+            for idx, periodo in desc_cols:
+                valor = row[idx]
+                if valor is None:
+                    continue
+                try:
+                    monto = float(valor)
+                    if monto != 0:
+                        descuentos.append({
+                            "folio_licencia": folio,
+                            "rut": rut,
+                            "periodo": periodo,
+                            "monto_descuento": monto,
+                            "origen": name,
+                        })
+                except (ValueError, TypeError):
+                    pass
+
+    return descuentos
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -502,11 +650,56 @@ def escribir_dim_afp(afp_filas):
     return _escribir_dim("AFP", ["AFP", "Tasa"], rows, num_fmt={2: "0.00"})
 
 
-def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON, INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON):
+def escribir_hechos_descuentos(descuentos):
+    wb = Workbook()
+    if descuentos:
+        wb.remove(wb.active)
+        ws = wb.create_sheet("Hechos_Descuentos")
+        headers = ["Folio Licencia", "RUT", "Periodo", "Monto Descuento", "Fuente"]
+        ws.append(headers)
+        ncols = len(headers)
+        C = {h: i + 1 for i, h in enumerate(headers)}
+
+        for d in descuentos:
+            ws.append([
+                d["folio_licencia"],
+                d["rut"],
+                d["periodo"],
+                d["monto_descuento"],
+                d["origen"],
+            ])
+
+        _estilizar_header(ws, ncols)
+        for r in range(2, ws.max_row + 1):
+            for c in range(1, ncols + 1):
+                cell = ws.cell(r, c)
+                cell.font = FONT
+                cell.border = BORDER
+            ws.cell(r, C["Monto Descuento"]).number_format = "#,##0"
+
+        _autoancho(ws)
+        ws.add_table(Table(
+            displayName="HechosDescuentos",
+            ref=f"A1:{get_column_letter(ncols)}{ws.max_row}"
+        ))
+    else:
+        wb.active.title = "Hechos_Descuentos"
+        wb.active.append(["Folio Licencia", "RUT", "Periodo", "Monto Descuento", "Fuente"])
+        _estilizar_header(wb.active, 5)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+
+def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
+                    INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON, descuentos=None):
     wb = Workbook()
     hoja = wb.active
     hoja.title = "Hechos_Licencias"
 
+    # ── refs ocultas (igual que antes) ──
     func_rows = [
         [f["rut"], f["nombre"], f["fecha_nacimiento"], f["sexo"], f["establecimiento"]]
         for f in sorted(funcionarios.values(), key=lambda x: x["nombre"])
@@ -533,15 +726,40 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON, INSTIT
     n_resol = 1 + len(RESOLUCION_MEDICA_CANON)
     n_afp_names = 1 + len(afp_filas) + 1
 
-    headers = ["Folio Licencia", "RUT", "Nombre", "Fecha Nacimiento", "Sexo", "Establecimiento",
-               "Fecha Inicio", "Fecha Termino", "Dias LM", "Tipo Licencia", "Institucion Salud",
-               "A.F.P.", "Tasa AFP", "Resolucion Medica", "Monto Subsidio", "Monto Cotizacion Previsional",
-               "Monto Previsional Salud", "Total", "Observaciones", "Fuente", "Detalle inconsistencia"]
+    # ── NUEVO: ref_Descuentos (hoja oculta, igual patrón que ref_Funcionario) ──
+    n_desc = 0
+    if descuentos:
+        desc_rows = [
+            [d["folio_licencia"], d["rut"], d["periodo"], d["monto_descuento"], d["origen"]]
+            for d in descuentos
+        ]
+        n_desc = _add_ref(wb, "ref_Descuentos", ["Folio Licencia", "RUT", "Periodo", "Monto Descuento", "Fuente"], desc_rows)
+
+    # ── Headers de Hechos_Licencias (con 8 columnas de montos: 4 Sistema + 4 Pagado) ──
+    headers = [
+        "Folio Licencia", "RUT", "Nombre", "Fecha Nacimiento", "Sexo", "Establecimiento",
+        "Fecha Inicio", "Fecha Termino", "Dias LM", "Tipo Licencia", "Institucion Salud",
+        "A.F.P.", "Tasa AFP", "Resolucion Medica",
+        "Monto Subsidio Sistema", "Monto Cotizacion Previsional Sistema", "Monto Previsional Salud Sistema", "Total Sistema",
+        "Monto Subsidio Pagado", "Monto Cotizacion Previsional Pagado", "Monto Previsional Salud Pagado", "Total Pagado",
+        "Observaciones", "Aplica Descuentos",
+        "Fuente", "Detalle inconsistencia"
+    ]
     hoja.append(headers)
     ncols = len(headers)
     C = {h: i + 1 for i, h in enumerate(headers)}
     n_hist, n_rows = len(hechos), len(hechos) + 40
     FECHA_MAP = {"fecha_inicio": "Fecha Inicio", "fecha_termino": "Fecha Termino"}
+
+    # Columnas de montos para aplicar formato numérico
+    COLS_MONTO_SISTEMA = [
+        C["Monto Subsidio Sistema"], C["Monto Cotizacion Previsional Sistema"],
+        C["Monto Previsional Salud Sistema"], C["Total Sistema"]
+    ]
+    COLS_MONTO_PAGADO = [
+        C["Monto Subsidio Pagado"], C["Monto Cotizacion Previsional Pagado"],
+        C["Monto Previsional Salud Pagado"], C["Total Pagado"]
+    ]
 
     for i in range(n_rows):
         r = i + 2
@@ -563,8 +781,14 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON, INSTIT
                 ("fecha_termino", "Fecha Termino"), ("dias_lm", "Dias LM"),
                 ("tipo_licencia", "Tipo Licencia"), ("institucion_salud", "Institucion Salud"),
                 ("afp", "A.F.P."), ("resolucion_medica", "Resolucion Medica"),
-                ("monto_subsidio", "Monto Subsidio"), ("monto_cotizacion_previsional", "Monto Cotizacion Previsional"),
-                ("monto_previsional_salud", "Monto Previsional Salud"), ("total", "Total"),
+                ("monto_subsidio_sistema", "Monto Subsidio Sistema"),
+                ("monto_cotizacion_previsional_sistema", "Monto Cotizacion Previsional Sistema"),
+                ("monto_previsional_salud_sistema", "Monto Previsional Salud Sistema"),
+                ("total_sistema", "Total Sistema"),
+                ("monto_subsidio_pagado", "Monto Subsidio Pagado"),
+                ("monto_cotizacion_previsional_pagado", "Monto Cotizacion Previsional Pagado"),
+                ("monto_previsional_salud_pagado", "Monto Previsional Salud Pagado"),
+                ("total_pagado", "Total Pagado"),
                 ("observaciones", "Observaciones"), ("origen", "Fuente"),
             ]:
                 hoja.cell(r, C[header], h[campo])
@@ -573,6 +797,24 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON, INSTIT
                 if isinstance(h[fkey], datetime):
                     hoja.cell(r, C[hkey]).number_format = "DD-MM-YYYY"
 
+        # Formato numérico para montos
+        for col_monto in COLS_MONTO_SISTEMA + COLS_MONTO_PAGADO:
+            hoja.cell(r, col_monto).number_format = "#,##0"
+
+        # ── NUEVO: fórmula Aplica Descuentos con HYPERLINK externo ──
+        if descuentos and n_desc > 0:
+            folio_col = get_column_letter(C["Folio Licencia"])
+            folio_cell = f"{folio_col}{r}"
+            formula = (
+                f'=IF(AND({folio_cell}<>"",COUNTIF(ref_Descuentos!$A:$A,{folio_cell})>0),'
+                f'HYPERLINK("[05_Hechos_Descuentos.xlsx]Hechos_Descuentos!A"&MATCH({folio_cell},ref_Descuentos!$A:$A,0),'
+                f'"Sí ("&COUNTIF(ref_Descuentos!$A:$A,{folio_cell})&" desc.)"),"No")'
+            )
+            hoja.cell(r, C["Aplica Descuentos"], formula)
+        else:
+            hoja.cell(r, C["Aplica Descuentos"], "No")
+
+        # Tasa AFP automática (igual que antes)
         f_afp = f"{get_column_letter(C['A.F.P.'])}{r}"
         formula_afp = "=IFERROR(INDEX(ref_AFP!$B$2:$B$" + str(n_afp) + ",MATCH(" + f_afp + ",ref_AFP!$A$2:$A$" + str(n_afp) + ",0)),0)"
         hoja.cell(r, C["Tasa AFP"], formula_afp)
@@ -592,14 +834,18 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON, INSTIT
         "2E7D32": ["RUT", "Nombre", "Fecha Nacimiento", "Sexo", "Establecimiento"],
         "1565C0": ["Folio Licencia", "Fecha Inicio", "Fecha Termino", "Dias LM", "Tipo Licencia",
                     "Institucion Salud", "A.F.P.", "Tasa AFP", "Resolucion Medica"],
-        "C62828": ["Monto Subsidio", "Monto Cotizacion Previsional", "Monto Previsional Salud", "Total"],
-        "F57C00": ["Observaciones", "Fuente", "Detalle inconsistencia"],
+        "C62828": ["Monto Subsidio Sistema", "Monto Cotizacion Previsional Sistema",
+                   "Monto Previsional Salud Sistema", "Total Sistema"],
+        "AD1457": ["Monto Subsidio Pagado", "Monto Cotizacion Previsional Pagado",
+                   "Monto Previsional Salud Pagado", "Total Pagado"],
+        "F57C00": ["Observaciones", "Aplica Descuentos", "Fuente", "Detalle inconsistencia"],
     }
     for color, campos in fills.items():
         fill = PatternFill("solid", start_color=color, end_color=color)
         for campo in campos:
             hoja.cell(1, C[campo]).fill = fill
 
+    # Validaciones de listas (igual que antes)
     _add_dv(hoja, C["Tipo Licencia"], "=ref_Listas!$A$2:$A$" + str(n_tipos), n_rows)
     _add_dv(hoja, C["Institucion Salud"], "=ref_Listas!$B$2:$B$" + str(n_inst), n_rows)
     _add_dv(hoja, C["Resolucion Medica"], "=ref_Listas!$C$2:$C$" + str(n_resol), n_rows)
@@ -622,6 +868,8 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON, INSTIT
     dv_rut.add(f"{get_column_letter(C['RUT'])}2:{get_column_letter(C['RUT'])}{1 + n_rows}")
     hoja.add_data_validation(dv_rut)
 
+
+    # Instrucciones actualizadas
     inst = wb.create_sheet("Instrucciones", 0)
     inst.sheet_view.showGridLines = False
     inst.column_dimensions["A"].width = 110
@@ -636,9 +884,13 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON, INSTIT
         "",
         "4) Las filas migradas indican su origen en 'Fuente' y posibles inconsistencias en 'Detalle inconsistencia'.",
         "",
-        "5) Las hojas ref_* son copias internas para las formulas. NO se editan aqui; se actualizan desde los archivos 01/02/03 y regenerando.",
+        "5) MONTOS DOBLES: las columnas con sufijo 'Sistema' (fondo rojo) corresponden al calculo Dep/Netcore. Las columnas con sufijo 'Pagado' (fondo fucsia) corresponden a lo efectivamente pagado por FONASA/ISAPRE. En hojas 2025/2026 el primer bloque usa columnas AFP/SALUD; el mapeo se realiza automaticamente.",
         "",
-        "6) Para Power BI: importe los 4 archivos y arme relaciones: Hechos.RUT -> Funcionario.RUT, Hechos.Establecimiento -> Establecimiento.Establecimiento, Hechos.A.F.P. -> AFP.AFP.",
+        "6) La columna 'Aplica Descuentos' muestra un enlace si el folio tiene descuentos en 05_Hechos_Descuentos.xlsx. Al hacer clic se abre ese archivo y salta a la primera fila del folio. Desde alli puede filtrar la tabla por Folio para ver todos los descuentos.",
+        "",
+        "7) Las hojas ref_* son copias internas para las formulas. NO se editan aqui; se actualizan desde los archivos 01/02/03/05 y regenerando.",
+        "",
+        "8) Para Power BI: importe los 5 archivos y arme relaciones: Hechos.RUT -> Funcionario.RUT, Hechos.Establecimiento -> Establecimiento.Establecimiento, Hechos.A.F.P. -> AFP.AFP.",
     ]
     for i, t in enumerate(textos, 1):
         c = inst.cell(i, 1, t)
@@ -674,6 +926,9 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes) -> dict:
         tipo_canon, institucion_canon, resolucion_canon,
     )
 
+    # Extraer descuentos de todas las hojas LM
+    descuentos = migrar_descuentos(hojas_hechos)
+
     for ne in nuevos_estab:
         dim_establecimientos.append({
             "tipo": "Otro",
@@ -692,7 +947,9 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes) -> dict:
         "03_Dim_AFP.xlsx": escribir_dim_afp(dim_afp),
         "04_Hechos_Licencias.xlsx": escribir_hechos(
             funcionarios, dim_afp, hechos, tipo_canon, institucion_canon, resolucion_canon,
+            descuentos=descuentos,
         ),
+        "05_Hechos_Descuentos.xlsx": escribir_hechos_descuentos(descuentos),
     }
 
     zip_buf = io.BytesIO()
