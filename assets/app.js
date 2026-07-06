@@ -8,8 +8,11 @@ const SLEP_MODULES = [
   "core.py",
 ];
 
-const SLEP_PY_BASE = "scripts/slep";
-const ESTABLECIMIENTOS_URL = "assets/tables/establecimientos.xlsx";
+const SITE_ROOT = window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1);
+
+const SLEP_PY_BASE = new URL("scripts/slep/", SITE_ROOT).href;
+const ESTABLECIMIENTOS_URL = new URL("assets/tables/establecimientos.xlsx", SITE_ROOT).href;
+// ------------------------------------------------------------
 
 let files = { licencias: null };
 let pyodideInstance = null;
@@ -58,7 +61,7 @@ function setupDrop(boxId, key) {
   });
 }
 
-// Carga Pyodide via script tag (evita bug de require.js con pyodide.mjs)
+// Carga Pyodide via script tag
 async function getPyodide() {
   if (pyodideInstance) return pyodideInstance;
 
@@ -89,8 +92,9 @@ async function getPyodide() {
   log("Descargando modulos del migrador...");
   pyodide.FS.mkdirTree("/home/pyodide/slep");
   for (const modulo of SLEP_MODULES) {
-    const res = await fetch(`${SLEP_PY_BASE}/${modulo}`);
-    if (!res.ok) throw new Error(`No se pudo cargar ${modulo} (HTTP ${res.status})`);
+    const url = new URL(modulo, SLEP_PY_BASE).href;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`No se pudo cargar ${modulo} (HTTP ${res.status}) desde ${url}`);
     const texto = await res.text();
     pyodide.FS.writeFile(`/home/pyodide/slep/${modulo}`, texto);
   }
@@ -134,9 +138,10 @@ async function procesarArchivos() {
     const licenciasBuf = await files.licencias.arrayBuffer();
 
     log("Cargando maestro de establecimientos...");
+    log("(URL: " + ESTABLECIMIENTOS_URL + ")");
     const estRes = await fetch(ESTABLECIMIENTOS_URL);
     if (!estRes.ok) {
-      throw new Error(`No se pudo cargar el maestro de establecimientos (${ESTABLECIMIENTOS_URL})`);
+      throw new Error(`No se pudo cargar el maestro de establecimientos (${ESTABLECIMIENTOS_URL}) — HTTP ${estRes.status}`);
     }
     const estBuf = await estRes.arrayBuffer();
 
