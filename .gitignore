@@ -1,7 +1,7 @@
 # Quarto output
 _site/
 .quarto/
-**/*.quarto_ipynb
+**/*.quarto_ipynb*
 
 # Cache de ejecución
 *_cache/
