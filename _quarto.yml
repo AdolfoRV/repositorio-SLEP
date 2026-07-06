@@ -1,6 +1,9 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - assets/**
+    - scripts/**
 
 website:
   title: "Proyecto SLEP"
@@ -13,14 +16,8 @@ website:
     left:
       - text: "Inicio"
         href: index.qmd
-      - text: "Instructivo"
-        href: instructivo.qmd
-      - text: "Informe 2"
-        href: informe.qmd
-      - text: "Feedback"
-        href: feedback.qmd
-      - text: "Plan de trabajo"
-        href: plan.qmd
+      - text: "Migrador"
+        href: migrador.qmd
       
 
   page-footer:
@@ -32,9 +29,10 @@ website:
 format:
   html:
     theme:
-      light: [flatly, styles.scss]
-      dark: [darkly, styles.scss]
-    toc: true
+      light: [flatly, assets/styles.scss]
+      dark: [darkly, assets/styles.scss]
+    respect-user-color-scheme: true
+    toc: false
     toc-depth: 3
     toc-title: "En esta página"
     code-fold: true
