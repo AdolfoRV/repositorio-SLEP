@@ -27,7 +27,10 @@ $headings-line-height:   1.25;
 
 /*-- scss:rules --*/
 
-// ─── CSS Custom Properties ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// CSS CUSTOM PROPERTIES — Light (default) & Dark palettes
+// ═══════════════════════════════════════════════════════════════════════════
+
 :root {
   --bg-primary:    #{$light-bg-primary};
   --bg-secondary:  #{$light-bg-secondary};
@@ -39,6 +42,32 @@ $headings-line-height:   1.25;
   --radius:        6px;
   --radius-lg:     10px;
   --transition:    0.2s ease;
+
+  // Bootstrap/Flatly variable bridge
+  --bs-body-bg:              #{$light-bg-primary};
+  --bs-body-color:           #{$light-text};
+  --bs-secondary-bg:         #{$light-bg-secondary};
+  --bs-border-color:         #{$light-border};
+  --bs-emphasis-color:       #{$light-text};
+  --bs-secondary-color:      rgba(31, 35, 40, 0.65);
+  --bs-tertiary-bg:          #{$light-bg-secondary};
+  --bs-code-color:           #{$light-accent};
+  --bs-link-color:           #{$light-accent};
+  --bs-link-hover-color:     #{$light-accent};
+  --bs-heading-color:        #{$light-text};
+  --bs-table-color:          #{$light-text};
+  --bs-table-bg:             transparent;
+  --bs-table-border-color:   #{$light-border};
+  --bs-card-bg:              #{$light-bg-secondary};
+  --bs-card-border-color:    #{$light-border};
+  --bs-nav-link-color:       #{$light-text};
+  --bs-nav-link-hover-color: #{$light-accent};
+  --bs-navbar-color:         #{$light-text};
+  --bs-navbar-hover-color:   #{$light-accent};
+  --bs-navbar-active-color:  #{$light-accent};
+
+  // Icon invert filter — no-op in light mode
+  --icon-invert: none;
 }
 
 // Dark mode — Quarto adds .quarto-dark to <body> when the toggle is active
@@ -51,7 +80,6 @@ body.quarto-dark {
   --shadow:        rgba(0, 0, 0, 0.3);
   --shadow-md:     rgba(0, 0, 0, 0.55);
 
-  // Force Bootstrap/Flatly background overrides
   --bs-body-bg:              #{$dark-bg-primary};
   --bs-body-color:           #{$dark-text};
   --bs-secondary-bg:         #{$dark-bg-secondary};
@@ -60,8 +88,24 @@ body.quarto-dark {
   --bs-secondary-color:      rgba(230, 237, 243, 0.65);
   --bs-tertiary-bg:          #{$dark-bg-secondary};
   --bs-code-color:           #{$dark-accent};
+  --bs-link-color:           #{$dark-accent};
+  --bs-link-hover-color:     #{$dark-accent};
+  --bs-heading-color:        #{$dark-text};
+  --bs-table-color:          #{$dark-text};
+  --bs-table-bg:             transparent;
+  --bs-table-border-color:   #{$dark-border};
+  --bs-card-bg:              #{$dark-bg-secondary};
+  --bs-card-border-color:    #{$dark-border};
+  --bs-nav-link-color:       #{$dark-text};
+  --bs-nav-link-hover-color: #{$dark-accent};
+  --bs-navbar-color:         #{$dark-text};
+  --bs-navbar-hover-color:   #{$dark-accent};
+  --bs-navbar-active-color:  #{$dark-accent};
 
-  // Navbar & dropdowns
+  // Invert dark SVG icons (close button, accordion caret) to read on dark bg
+  --icon-invert: invert(1) grayscale(100%) brightness(1.5);
+
+  // ─── Nested dark overrides (from original styles.scss) ─────────────────
   .navbar {
     background-color: #{$dark-bg-secondary} !important;
     border-bottom-color: #{$dark-border} !important;
@@ -74,19 +118,16 @@ body.quarto-dark {
     .dropdown-item:hover { background-color: #{$dark-border}; color: #{$dark-accent}; }
   }
 
-  // Sidebar
   #quarto-sidebar {
     background: #{$dark-bg-secondary} !important;
     border-right-color: #{$dark-border} !important;
   }
 
-  // TOC
   #TOC {
     background: #{$dark-bg-secondary};
     border-color: #{$dark-border};
   }
 
-  // Code blocks
   div.sourceCode {
     background: #{$dark-bg-secondary};
     border-color: #{$dark-border};
@@ -97,25 +138,23 @@ body.quarto-dark {
     border-color: #{$dark-border};
   }
 
-  // Tables
   table thead { background: #{$dark-border}; }
   table tbody tr { border-bottom-color: #{$dark-border}; }
 
-  // Callouts
   .callout { background: #{$dark-bg-secondary}; }
 
-  // Footer & page nav
   .nav-footer { background: #{$dark-bg-secondary}; border-top-color: #{$dark-border}; }
   .page-navigation a { background: #{$dark-bg-secondary}; border-color: #{$dark-border}; color: #{$dark-text}; }
 
-  // Cards
   .course-card { background: #{$dark-bg-secondary}; border-color: #{$dark-border}; }
 
-  // Inline code background
   code:not(.sourceCode) { background: #{$dark-border}; color: #{$dark-accent}; }
 }
 
-// ─── Base ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// BASE COMPONENT RULES — generic Bootstrap / UI component theming
+// ═══════════════════════════════════════════════════════════════════════════
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -125,23 +164,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color var(--transition), color var(--transition);
-}
-
-// ─── Typography ──────────────────────────────────────────────────────────────
-h1, h2, h3, h4, h5, h6 {
-  font-family: $font-family-sans-serif;
-  font-weight: $headings-font-weight;
-  line-height: $headings-line-height;
-  color: var(--text-primary);
-  letter-spacing: -0.015em;
-}
-
-h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); }
-h2 { font-size: clamp(1.45rem, 3vw, 1.85rem); }
-h3 { font-size: clamp(1.15rem, 2.5vw, 1.4rem); }
-
-p {
-  color: var(--text-primary);
 }
 
 a {
@@ -157,9 +179,55 @@ a {
   }
 }
 
+i, svg, .bi {
+  color: inherit;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-sans-serif;
+  font-weight: $headings-font-weight;
+  line-height: $headings-line-height;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); }
+h2 { font-size: clamp(1.45rem, 3vw, 1.85rem); }
+h3 { font-size: clamp(1.15rem, 2.5vw, 1.4rem); }
+
+p, span, label, strong, em, small {
+  color: var(--text-primary);
+}
+
 strong { font-weight: 600; }
 
-code:not(.sourceCode) {
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 1.5rem 0;
+  padding: 0.75rem 1.25rem;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+
+// ─── Code ─────────────────────────────────────────────────────────────────
+pre, code, .sourceCode {
+  background-color: var(--bg-secondary) !important;
+  color: inherit;
+  border-color: var(--border);
+}
+
+code:not(pre code):not(.sourceCode) {
   font-family: $font-family-monospace;
   font-size: 0.875em;
   background: var(--border);
@@ -168,6 +236,392 @@ code:not(.sourceCode) {
   border-radius: 4px;
   font-weight: 500;
 }
+
+.code-annotation-container-hidden,
+.code-copy-button {
+  color: var(--text-primary);
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────
+table, .table {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background-color: transparent;
+}
+
+thead, th {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background-color: var(--bg-secondary);
+}
+
+td {
+  border-color: var(--border);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.table-hover > tbody > tr:hover > * {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+// ─── Navs / navbar / tabs / pills ─────────────────────────────────────────
+.navbar,
+.navbar-brand,
+#quarto-header {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.nav-link {
+  color: var(--text-primary);
+
+  &:hover, &:focus {
+    color: var(--accent);
+  }
+
+  &.active {
+    color: var(--accent);
+    border-color: var(--border) var(--border) var(--bg-primary);
+  }
+}
+
+.nav-tabs, .nav-pills {
+  border-color: var(--border);
+}
+
+.nav-tabs .nav-link.active {
+  background-color: var(--bg-primary);
+  border-color: var(--border) var(--border) var(--bg-primary);
+}
+
+.nav-pills .nav-link.active {
+  background-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Sidebar / TOC (Quarto specific) ──────────────────────────────────────
+#quarto-sidebar,
+.sidebar,
+.sidebar-navigation,
+#TOC,
+.toc-actions {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border);
+
+  a {
+    color: var(--text-primary);
+
+    &:hover, &.active {
+      color: var(--accent);
+    }
+  }
+}
+
+// ─── Buttons ───────────────────────────────────────────────────────────────
+.btn {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background-color: transparent;
+}
+
+.btn-primary,
+.btn-outline-primary:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Forms ────────────────────────────────────────────────────────────────
+.form-control,
+input, select, textarea {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+
+  &:focus {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--accent);
+  }
+
+  &::placeholder {
+    color: var(--bs-secondary-color);
+  }
+}
+
+.form-check-input {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+
+  &:checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+.form-switch .form-check-input {
+  background-color: var(--bg-secondary);
+}
+
+.input-group-text {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+// ─── Dropdowns / menus ─────────────────────────────────────────────────────
+.dropdown-menu {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+.dropdown-item {
+  color: var(--text-primary);
+
+  &:hover, &:focus {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+  }
+}
+
+// ─── Cards / callouts / alerts ─────────────────────────────────────────────
+.card {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.callout {
+  background-color: var(--bg-secondary);
+  border-left-color: var(--accent);
+
+  .callout-title-container,
+  .callout-body {
+    color: var(--text-primary);
+  }
+}
+
+.alert {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+// ─── Modal ─────────────────────────────────────────────────────────────────
+.modal-content {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.modal-header,
+.modal-footer {
+  border-color: var(--border);
+}
+
+// ─── Pagination ─────────────────────────────────────────────────────────────
+.page-link {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+
+  &:hover {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+  }
+}
+
+.page-item.active .page-link {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Badges ─────────────────────────────────────────────────────────────────
+.badge {
+  color: var(--bg-primary);
+  background-color: var(--accent);
+  font-family: $font-family-monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+// ─── List group ─────────────────────────────────────────────────────────────
+.list-group-item {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+
+  &.active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-primary);
+  }
+
+  &:hover, &:focus {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  &.disabled {
+    background-color: var(--bg-secondary);
+    color: var(--bs-secondary-color);
+  }
+}
+
+// ─── Popovers / Tooltips ──────────────────────────────────────────────────
+.popover {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+
+  .popover-header {
+    background-color: var(--bg-primary);
+    border-color: var(--border);
+    color: var(--text-primary);
+  }
+
+  .popover-body {
+    color: var(--text-primary);
+  }
+}
+
+.tooltip .tooltip-inner {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+// ─── Toasts ───────────────────────────────────────────────────────────────
+.toast {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.toast-header {
+  background-color: var(--bg-primary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+// ─── Progress bars ────────────────────────────────────────────────────────
+.progress {
+  background-color: var(--bg-secondary);
+}
+
+.progress-bar {
+  background-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Breadcrumbs ──────────────────────────────────────────────────────────
+.breadcrumb {
+  background-color: var(--bg-secondary);
+}
+
+.breadcrumb-item {
+  color: var(--text-primary);
+
+  a { color: var(--accent); }
+
+  &.active { color: var(--bs-secondary-color); }
+
+  + .breadcrumb-item::before {
+    color: var(--bs-secondary-color);
+  }
+}
+
+// ─── Accordion ──────────────────────────────────────────────────────────
+.accordion-item {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.accordion-button {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+
+  &:not(.collapsed) {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+  }
+
+  &::after {
+    filter: var(--icon-invert);
+  }
+}
+
+// ─── Close button ───────────────────────────────────────────────────────────
+.btn-close {
+  filter: var(--icon-invert);
+}
+
+// ─── Footnotes / figures ─────────────────────────────────────────────────────
+.footnote-ref,
+.footnotes a {
+  color: var(--accent);
+}
+
+figcaption, .figure-caption {
+  color: var(--bs-secondary-color);
+}
+
+// ─── Footer ─────────────────────────────────────────────────────────────────
+.nav-footer, #quarto-appendix {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border);
+
+  a {
+    color: var(--accent);
+  }
+}
+
+// ─── Search (Quarto/Algolia widget) ─────────────────────────────────────────
+#quarto-search,
+.aa-DetachedSearchButton,
+.aa-DetachedOverlay,
+.aa-Panel {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+// ─── Selection & scrollbar ───────────────────────────────────────────────────
+::selection {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--text-primary);
+}
+
+::-webkit-scrollbar {
+  background-color: var(--bg-primary);
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+
+  &:hover {
+    background-color: var(--accent);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUARTO-SPECIFIC & RICH COMPONENT STYLES
+// ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Navbar ──────────────────────────────────────────────────────────────────
 .navbar {
@@ -556,18 +1010,6 @@ table {
   }
 }
 
-// ─── Blockquotes ─────────────────────────────────────────────────────────────
-blockquote {
-  border-left: 3px solid var(--accent);
-  margin: 1.5rem 0;
-  padding: 0.75rem 1.25rem;
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  font-style: italic;
-  color: var(--text-primary);
-  opacity: 0.85;
-}
-
 // ─── Footer ──────────────────────────────────────────────────────────────────
 .nav-footer {
   background: var(--bg-secondary);
@@ -617,33 +1059,7 @@ blockquote {
   }
 }
 
-// ─── Misc UI ─────────────────────────────────────────────────────────────────
-hr {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 2rem 0;
-}
-
-.badge {
-  font-family: $font-family-monospace;
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
-  &:hover { background: var(--accent); }
-}
-
-::selection {
-  background: color-mix(in srgb, var(--accent) 25%, transparent);
-  color: var(--text-primary);
-}
-
+// ─── Back to top ─────────────────────────────────────────────────────────────
 #quarto-back-to-top {
   background: var(--accent);
   color: white;
@@ -659,6 +1075,10 @@ hr {
 
   &:hover { opacity: 0.85; }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LANDING PAGE & CUSTOM APP STYLES
+// ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Index / Landing Page ────────────────────────────────────────────────────
 .hero-section {
@@ -792,6 +1212,204 @@ hr {
     flex: 1;
     height: 1px;
     background: var(--border);
+  }
+}
+
+// ─── App / Migrador SLEP ───────────────────────────────────────────────────
+.slep-app {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0.5rem 0;
+
+  .upload-box {
+    background: var(--bg-secondary);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    transition: all var(--transition);
+
+    strong {
+      display: block;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    small {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      opacity: 0.6;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    code {
+      background: transparent;
+      padding: 0;
+      font-size: 0.9em;
+    }
+
+    input[type="file"] {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      max-width: 100%;
+    }
+
+    &:hover,
+    &.dragover {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
+    }
+  }
+
+  .file-tag {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding: 0.35rem 0.9rem;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid var(--accent);
+    border-radius: 100px;
+    font-family: $font-family-monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 600;
+
+    &::before {
+      content: "✓";
+      font-size: 0.75rem;
+    }
+
+    &.visible {
+      display: inline-flex;
+    }
+  }
+
+  .actions {
+    text-align: center;
+    margin: 2rem 0;
+  }
+
+  #btn-procesar {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.8rem 2rem;
+    font-family: $font-family-sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: 0 4px 14px rgba(149, 4, 4, 0.25);
+
+    &:hover:not(:disabled) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(149, 4, 4, 0.35);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background: var(--border);
+      color: var(--text-primary);
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+
+  #log {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    font-family: $font-family-monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    opacity: 0.9;
+    min-height: 3.5rem;
+    max-height: 280px;
+    overflow-y: auto;
+
+    &:empty::before {
+      content: "Esperando archivos…";
+      opacity: 0.35;
+      font-style: italic;
+    }
+
+    .log-error   { color: #EF4444; }
+    .log-success { color: #10B981; }
+    .log-info    { color: var(--accent); }
+    .log-warn    { color: #F59E0B; }
+  }
+
+  #downloads {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+
+    h3 {
+      margin: 0 0 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-primary);
+      opacity: 0.6;
+    }
+  }
+
+  #download-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &::before {
+        content: "↓";
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      a {
+        color: var(--accent);
+        font-weight: 500;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+      }
+    }
   }
 }
 
