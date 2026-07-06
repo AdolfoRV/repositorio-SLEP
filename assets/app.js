@@ -9,7 +9,7 @@ const SLEP_MODULES = [
 ];
 
 const SLEP_PY_BASE = "scripts/slep";
-const ESTABLECIMIENTOS_URL = "../assets/tables/establecimientos.xlsx";
+const ESTABLECIMIENTOS_URL = "assets/tables/establecimientos.xlsx";
 
 let files = { licencias: null };
 let pyodideInstance = null;
