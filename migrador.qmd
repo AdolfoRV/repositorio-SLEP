@@ -5,7 +5,7 @@ title: "Migrador SLEP - Esquema Estrella"
 ::: {.slep-app #app}
 <div class="upload-box" id="drop-licencias">
   <strong>Planilla de licencias</strong>
-  <small>Archivo que entrega la contraparte (ej: <code>LICENCIAS SLEP 2024-2025.xlsx</code>)</small>
+  <small>Archivo consolidado (ej: <code>LICENCIAS SLEP 2024-2025.xlsx</code>)</small>
   <input type="file" id="input-licencias" accept=".xlsx" />
   <div id="tag-licencias" class="file-tag"></div>
 </div>
