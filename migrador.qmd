@@ -1,0 +1,65 @@
+---
+title: "Migrador SLEP - Esquema Estrella"
+---
+
+::: {.slep-app #app}
+<div class="upload-box" id="drop-licencias">
+  <strong>Planilla de licencias</strong>
+  <small>Archivo que entrega la contraparte (ej: <code>LICENCIAS SLEP 2024-2025.xlsx</code>)</small>
+  <input type="file" id="input-licencias" accept=".xlsx" />
+  <div id="tag-licencias" class="file-tag"></div>
+</div>
+<div class="actions">
+  <button id="btn-procesar" disabled>Selecciona el archivo de licencias</button>
+</div>
+<div id="log"></div>
+<div id="downloads" style="display:none;">
+  <h3>Archivos generados</h3>
+  <ul id="download-list"></ul>
+</div>
+:::
+
+
+::: {.panel-tabset}
+## Establecimientos
+```{python}
+#| echo: false
+#| warning: false
+
+import pandas as pd
+from itables import init_notebook_mode, show
+init_notebook_mode(all_interactive=False)
+
+establecimientos = pd.read_excel("assets/tables/establecimientos.xlsx")
+
+show(establecimientos, scrollY="400px", scrollCollapse=True, paging=False)
+```
+
+## A.F.P.
+```{python}
+#| echo: false
+#| warning: false
+
+import pandas as pd
+from itables import init_notebook_mode, show
+init_notebook_mode(all_interactive=False)
+
+afps = pd.read_excel("assets/tables/afps.xlsx")
+
+show(
+    afps,
+    scrollY="400px",
+    paging=False,
+    columnDefs=[{"className": "dt-center", "targets": "_all"}],
+    classes=["display", "nowrap", "stripe"],
+    style="width:100%"
+)
+```
+:::
+
+```{=html}
+<script type="module">
+  import { initSlepApp } from "./assets/app.js";
+  initSlepApp();
+</script>
+```
