@@ -1,0 +1,1455 @@
+/*-- scss:defaults --*/
+
+// ─── Fonts ───────────────────────────────────────────────────────────────────
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+
+// ─── Light Theme Palette ────────────────────────────────────────────────────
+$light-bg-primary:    #ffffff;
+$light-bg-secondary:  #f6f8fa;
+$light-text:          #1f2328;
+$light-accent:        #950404;
+$light-border:        #d0d7de;
+
+// ─── Dark Theme Palette ─────────────────────────────────────────────────────
+$dark-bg-primary:     #0d1117;
+$dark-bg-secondary:   #161b22;
+$dark-text:           #e6edf3;
+$dark-accent:         #d42d2d;
+$dark-border:         #30363d;
+
+// ─── Quarto Theme Variable Overrides ────────────────────────────────────────
+$font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+$font-family-monospace:  "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+$font-size-root:         17px;
+$line-height-base:       1.75;
+$headings-font-weight:   600;
+$headings-line-height:   1.25;
+
+/*-- scss:rules --*/
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CSS CUSTOM PROPERTIES — Light (default) & Dark palettes
+// ═══════════════════════════════════════════════════════════════════════════
+
+:root {
+  --bg-primary:    #{$light-bg-primary};
+  --bg-secondary:  #{$light-bg-secondary};
+  --text-primary:  #{$light-text};
+  --accent:        #{$light-accent};
+  --border:        #{$light-border};
+  --shadow:        rgba(31, 35, 40, 0.06);
+  --shadow-md:     rgba(31, 35, 40, 0.14);
+  --radius:        6px;
+  --radius-lg:     10px;
+  --transition:    0.2s ease;
+
+  // Bootstrap/Flatly variable bridge
+  --bs-body-bg:              #{$light-bg-primary};
+  --bs-body-color:           #{$light-text};
+  --bs-secondary-bg:         #{$light-bg-secondary};
+  --bs-border-color:         #{$light-border};
+  --bs-emphasis-color:       #{$light-text};
+  --bs-secondary-color:      rgba(31, 35, 40, 0.65);
+  --bs-tertiary-bg:          #{$light-bg-secondary};
+  --bs-code-color:           #{$light-accent};
+  --bs-link-color:           #{$light-accent};
+  --bs-link-hover-color:     #{$light-accent};
+  --bs-heading-color:        #{$light-text};
+  --bs-table-color:          #{$light-text};
+  --bs-table-bg:             transparent;
+  --bs-table-border-color:   #{$light-border};
+  --bs-card-bg:              #{$light-bg-secondary};
+  --bs-card-border-color:    #{$light-border};
+  --bs-nav-link-color:       #{$light-text};
+  --bs-nav-link-hover-color: #{$light-accent};
+  --bs-navbar-color:         #{$light-text};
+  --bs-navbar-hover-color:   #{$light-accent};
+  --bs-navbar-active-color:  #{$light-accent};
+
+  // Icon invert filter — no-op in light mode
+  --icon-invert: none;
+}
+
+// Dark mode — Quarto adds .quarto-dark to <body> when the toggle is active
+body.quarto-dark {
+  --bg-primary:    #{$dark-bg-primary};
+  --bg-secondary:  #{$dark-bg-secondary};
+  --text-primary:  #{$dark-text};
+  --accent:        #{$dark-accent};
+  --border:        #{$dark-border};
+  --shadow:        rgba(0, 0, 0, 0.3);
+  --shadow-md:     rgba(0, 0, 0, 0.55);
+
+  --bs-body-bg:              #{$dark-bg-primary};
+  --bs-body-color:           #{$dark-text};
+  --bs-secondary-bg:         #{$dark-bg-secondary};
+  --bs-border-color:         #{$dark-border};
+  --bs-emphasis-color:       #{$dark-text};
+  --bs-secondary-color:      rgba(230, 237, 243, 0.65);
+  --bs-tertiary-bg:          #{$dark-bg-secondary};
+  --bs-code-color:           #{$dark-accent};
+  --bs-link-color:           #{$dark-accent};
+  --bs-link-hover-color:     #{$dark-accent};
+  --bs-heading-color:        #{$dark-text};
+  --bs-table-color:          #{$dark-text};
+  --bs-table-bg:             transparent;
+  --bs-table-border-color:   #{$dark-border};
+  --bs-card-bg:              #{$dark-bg-secondary};
+  --bs-card-border-color:    #{$dark-border};
+  --bs-nav-link-color:       #{$dark-text};
+  --bs-nav-link-hover-color: #{$dark-accent};
+  --bs-navbar-color:         #{$dark-text};
+  --bs-navbar-hover-color:   #{$dark-accent};
+  --bs-navbar-active-color:  #{$dark-accent};
+
+  // Invert dark SVG icons (close button, accordion caret) to read on dark bg
+  --icon-invert: invert(1) grayscale(100%) brightness(1.5);
+
+  // ─── Nested dark overrides (from original styles.scss) ─────────────────
+  .navbar {
+    background-color: #{$dark-bg-secondary} !important;
+    border-bottom-color: #{$dark-border} !important;
+  }
+
+  .dropdown-menu {
+    background-color: #{$dark-bg-secondary};
+    border-color: #{$dark-border};
+    .dropdown-item { color: #{$dark-text}; }
+    .dropdown-item:hover { background-color: #{$dark-border}; color: #{$dark-accent}; }
+  }
+
+  #quarto-sidebar {
+    background: #{$dark-bg-secondary} !important;
+    border-right-color: #{$dark-border} !important;
+  }
+
+  #TOC {
+    background: #{$dark-bg-secondary};
+    border-color: #{$dark-border};
+  }
+
+  div.sourceCode {
+    background: #{$dark-bg-secondary};
+    border-color: #{$dark-border};
+  }
+
+  details.code-fold {
+    background: #{$dark-bg-secondary};
+    border-color: #{$dark-border};
+  }
+
+  table thead { background: #{$dark-border}; }
+  table tbody tr { border-bottom-color: #{$dark-border}; }
+
+  .callout { background: #{$dark-bg-secondary}; }
+
+  .nav-footer { background: #{$dark-bg-secondary}; border-top-color: #{$dark-border}; }
+  .page-navigation a { background: #{$dark-bg-secondary}; border-color: #{$dark-border}; color: #{$dark-text}; }
+
+  .course-card { background: #{$dark-bg-secondary}; border-color: #{$dark-border}; }
+
+  code:not(.sourceCode) { background: #{$dark-border}; color: #{$dark-accent}; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BASE COMPONENT RULES — generic Bootstrap / UI component theming
+// ═══════════════════════════════════════════════════════════════════════════
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: $font-family-sans-serif;
+  font-size: $font-size-root;
+  line-height: $line-height-base;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color var(--transition), opacity var(--transition);
+
+  &:hover {
+    color: var(--accent);
+    opacity: 0.75;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+i, svg, .bi {
+  color: inherit;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-sans-serif;
+  font-weight: $headings-font-weight;
+  line-height: $headings-line-height;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); }
+h2 { font-size: clamp(1.45rem, 3vw, 1.85rem); }
+h3 { font-size: clamp(1.15rem, 2.5vw, 1.4rem); }
+
+p, span, label, strong, em, small {
+  color: var(--text-primary);
+}
+
+strong { font-weight: 600; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 1.5rem 0;
+  padding: 0.75rem 1.25rem;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-style: italic;
+  color: var(--text-primary);
+  opacity: 0.85;
+}
+
+// ─── Code ─────────────────────────────────────────────────────────────────
+pre, code, .sourceCode {
+  background-color: var(--bg-secondary) !important;
+  color: inherit;
+  border-color: var(--border);
+}
+
+code:not(pre code):not(.sourceCode) {
+  font-family: $font-family-monospace;
+  font-size: 0.875em;
+  background: var(--border);
+  color: var(--accent);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.code-annotation-container-hidden,
+.code-copy-button {
+  color: var(--text-primary);
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────
+table, .table {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background-color: transparent;
+}
+
+thead, th {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background-color: var(--bg-secondary);
+}
+
+td {
+  border-color: var(--border);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.table-hover > tbody > tr:hover > * {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+// ─── Navs / navbar / tabs / pills ─────────────────────────────────────────
+.navbar,
+.navbar-brand,
+#quarto-header {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.nav-link {
+  color: var(--text-primary);
+
+  &:hover, &:focus {
+    color: var(--accent);
+  }
+
+  &.active {
+    color: var(--accent);
+    border-color: var(--border) var(--border) var(--bg-primary);
+  }
+}
+
+.nav-tabs, .nav-pills {
+  border-color: var(--border);
+}
+
+.nav-tabs .nav-link.active {
+  background-color: var(--bg-primary);
+  border-color: var(--border) var(--border) var(--bg-primary);
+}
+
+.nav-pills .nav-link.active {
+  background-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Sidebar / TOC (Quarto specific) ──────────────────────────────────────
+#quarto-sidebar,
+.sidebar,
+.sidebar-navigation,
+#TOC,
+.toc-actions {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border);
+
+  a {
+    color: var(--text-primary);
+
+    &:hover, &.active {
+      color: var(--accent);
+    }
+  }
+}
+
+// ─── Buttons ───────────────────────────────────────────────────────────────
+.btn {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background-color: transparent;
+}
+
+.btn-primary,
+.btn-outline-primary:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Forms ────────────────────────────────────────────────────────────────
+.form-control,
+input, select, textarea {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+
+  &:focus {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--accent);
+  }
+
+  &::placeholder {
+    color: var(--bs-secondary-color);
+  }
+}
+
+.form-check-input {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+
+  &:checked {
+    background-color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+.form-switch .form-check-input {
+  background-color: var(--bg-secondary);
+}
+
+.input-group-text {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+// ─── Dropdowns / menus ─────────────────────────────────────────────────────
+.dropdown-menu {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+.dropdown-item {
+  color: var(--text-primary);
+
+  &:hover, &:focus {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+  }
+}
+
+// ─── Cards / callouts / alerts ─────────────────────────────────────────────
+.card {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.callout {
+  background-color: var(--bg-secondary);
+  border-left-color: var(--accent);
+
+  .callout-title-container,
+  .callout-body {
+    color: var(--text-primary);
+  }
+}
+
+.alert {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+// ─── Modal ─────────────────────────────────────────────────────────────────
+.modal-content {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.modal-header,
+.modal-footer {
+  border-color: var(--border);
+}
+
+// ─── Pagination ─────────────────────────────────────────────────────────────
+.page-link {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+
+  &:hover {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+  }
+}
+
+.page-item.active .page-link {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Badges ─────────────────────────────────────────────────────────────────
+.badge {
+  color: var(--bg-primary);
+  background-color: var(--accent);
+  font-family: $font-family-monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+// ─── List group ─────────────────────────────────────────────────────────────
+.list-group-item {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+
+  &.active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-primary);
+  }
+
+  &:hover, &:focus {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  &.disabled {
+    background-color: var(--bg-secondary);
+    color: var(--bs-secondary-color);
+  }
+}
+
+// ─── Popovers / Tooltips ──────────────────────────────────────────────────
+.popover {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+
+  .popover-header {
+    background-color: var(--bg-primary);
+    border-color: var(--border);
+    color: var(--text-primary);
+  }
+
+  .popover-body {
+    color: var(--text-primary);
+  }
+}
+
+.tooltip .tooltip-inner {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+// ─── Toasts ───────────────────────────────────────────────────────────────
+.toast {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.toast-header {
+  background-color: var(--bg-primary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+// ─── Progress bars ────────────────────────────────────────────────────────
+.progress {
+  background-color: var(--bg-secondary);
+}
+
+.progress-bar {
+  background-color: var(--accent);
+  color: var(--bg-primary);
+}
+
+// ─── Breadcrumbs ──────────────────────────────────────────────────────────
+.breadcrumb {
+  background-color: var(--bg-secondary);
+}
+
+.breadcrumb-item {
+  color: var(--text-primary);
+
+  a { color: var(--accent); }
+
+  &.active { color: var(--bs-secondary-color); }
+
+  + .breadcrumb-item::before {
+    color: var(--bs-secondary-color);
+  }
+}
+
+// ─── Accordion ──────────────────────────────────────────────────────────
+.accordion-item {
+  background-color: var(--bg-secondary);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.accordion-button {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+
+  &:not(.collapsed) {
+    background-color: var(--bg-primary);
+    color: var(--accent);
+  }
+
+  &::after {
+    filter: var(--icon-invert);
+  }
+}
+
+// ─── Close button ───────────────────────────────────────────────────────────
+.btn-close {
+  filter: var(--icon-invert);
+}
+
+// ─── Footnotes / figures ─────────────────────────────────────────────────────
+.footnote-ref,
+.footnotes a {
+  color: var(--accent);
+}
+
+figcaption, .figure-caption {
+  color: var(--bs-secondary-color);
+}
+
+// ─── Footer ─────────────────────────────────────────────────────────────────
+.nav-footer, #quarto-appendix {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border-color: var(--border);
+
+  a {
+    color: var(--accent);
+  }
+}
+
+// ─── Search (Quarto/Algolia widget) ─────────────────────────────────────────
+#quarto-search,
+.aa-DetachedSearchButton,
+.aa-DetachedOverlay,
+.aa-Panel {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+// ─── Selection & scrollbar ───────────────────────────────────────────────────
+::selection {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--text-primary);
+}
+
+::-webkit-scrollbar {
+  background-color: var(--bg-primary);
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+
+  &:hover {
+    background-color: var(--accent);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUARTO-SPECIFIC & RICH COMPONENT STYLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Navbar ──────────────────────────────────────────────────────────────────
+.navbar {
+  background-color: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: none;
+  padding: 0.6rem 1.5rem;
+  transition: background-color var(--transition);
+
+  .navbar-brand {
+    font-family: $font-family-monospace;
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--accent) !important;
+    letter-spacing: -0.02em;
+
+    &:hover { opacity: 0.8; }
+  }
+
+  .nav-link {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary) !important;
+    opacity: 0.8;
+    padding: 0.4rem 0.75rem !important;
+    border-radius: var(--radius);
+    transition: all var(--transition);
+
+    &:hover {
+      opacity: 1;
+      background: var(--border);
+      text-decoration: none;
+    }
+
+    &.active {
+      opacity: 1;
+      color: var(--accent) !important;
+    }
+  }
+
+  .dropdown-menu {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px var(--shadow-md);
+    padding: 0.5rem;
+    min-width: 220px;
+
+    .dropdown-item {
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      padding: 0.45rem 0.75rem;
+      border-radius: var(--radius);
+      transition: all var(--transition);
+
+      &:hover {
+        background: var(--border);
+        color: var(--accent);
+      }
+    }
+
+    .dropdown-divider { border-color: var(--border); }
+  }
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────────
+#quarto-sidebar {
+  background: var(--bg-secondary) !important;
+  border-right: 1px solid var(--border) !important;
+  transition: all 0.3s ease;
+
+  .sidebar-title {
+    font-family: $font-family-sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent) !important;
+    padding: 1rem 1rem 0.5rem;
+  }
+
+  .sidebar-section .sidebar-section-item {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-primary);
+    opacity: 0.45;
+    padding: 0.6rem 1rem 0.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .sidebar-item-text {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    opacity: 0.8;
+    transition: all var(--transition);
+  }
+
+  // Container is the hover target — children are just visual pieces
+  .sidebar-item-container {
+    display: flex;
+    align-items: center;
+    border-radius: var(--radius);
+    margin: 0.05rem 0.5rem;
+    transition: background var(--transition);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--border);
+
+      .sidebar-item-text,
+      .sidebar-link,
+      .sidebar-item-toggle { opacity: 1; color: var(--accent) !important; }
+    }
+
+    // Active state (current page section open)
+    &:has(> .active),
+    &:has(> [aria-expanded="true"]) {
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+
+      .sidebar-item-text,
+      .sidebar-link,
+      .sidebar-item-toggle { opacity: 1; color: var(--accent) !important; font-weight: 500; }
+    }
+
+    a {
+      display: block;
+      padding: 0.35rem 0.5rem;
+      text-decoration: none;
+      background: transparent !important;
+      border-radius: 0;
+      flex: 1;
+
+      &.sidebar-item-toggle {
+        flex: 0;
+        padding: 0.35rem 0.75rem 0.35rem 0;
+      }
+
+      &:hover { background: transparent !important; text-decoration: none; }
+    }
+  }
+
+  // Leaf items (no toggle, single <a>)
+  .sidebar-item > a:not(.sidebar-item-toggle) {
+    display: block;
+    padding: 0.35rem 1rem;
+    border-radius: var(--radius);
+    margin: 0.05rem 0.5rem;
+    transition: all var(--transition);
+    text-decoration: none;
+    opacity: 0.8;
+    color: var(--text-primary);
+
+    &:hover {
+      background: var(--border);
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    &.active {
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      opacity: 1;
+      color: var(--accent);
+      font-weight: 500;
+    }
+  }
+}
+
+#quarto-sidebar-toggle {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-primary);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 2px 6px var(--shadow);
+
+  &:hover {
+    background: var(--border);
+    color: var(--accent);
+  }
+}
+
+// ─── Content ─────────────────────────────────────────────────────────────────
+#quarto-content {
+  background: var(--bg-primary);
+
+  .content {
+    max-width: 840px;
+  }
+}
+
+.quarto-title {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+
+  .title {
+    font-family: $font-family-sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    line-height: 1.15;
+  }
+
+  .description {
+    font-size: 1.1rem;
+    opacity: 0.65;
+    margin-top: 0.75rem;
+  }
+
+  .quarto-title-meta {
+    font-size: 0.85rem;
+    opacity: 0.5;
+    font-family: $font-family-monospace;
+  }
+}
+
+// ─── TOC ─────────────────────────────────────────────────────────────────────
+#TOC {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  font-size: 0.875rem;
+
+  .toc-title {
+    font-family: $font-family-sans-serif;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  a {
+    color: var(--text-primary);
+    opacity: 0.7;
+    display: block;
+    padding: 0.25rem 0;
+    border-left: 2px solid transparent;
+    padding-left: 0.5rem;
+    transition: all var(--transition);
+
+    &:hover {
+      opacity: 1;
+      color: var(--accent);
+      border-left-color: var(--accent);
+      text-decoration: none;
+    }
+
+    &.active {
+      opacity: 1;
+      color: var(--accent);
+      border-left-color: var(--accent);
+      font-weight: 500;
+    }
+  }
+
+  ul { list-style: none; padding-left: 0.75rem; margin: 0; }
+  > ul { padding-left: 0; }
+}
+
+// ─── Code Blocks ─────────────────────────────────────────────────────────────
+div.sourceCode {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 2px 8px var(--shadow);
+
+  pre {
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    background: transparent;
+    font-family: $font-family-monospace;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+}
+
+details.code-fold {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin: 1rem 0;
+  overflow: hidden;
+
+  summary {
+    padding: 0.75rem 1rem;
+    font-family: $font-family-monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background var(--transition);
+
+    &:hover { background: var(--border); }
+  }
+}
+
+// ─── Callout Blocks ──────────────────────────────────────────────────────────
+.callout {
+  border-radius: var(--radius-lg);
+  border: none;
+  background: var(--bg-secondary);
+  box-shadow: 0 2px 8px var(--shadow);
+  margin: 1.5rem 0;
+  overflow: hidden;
+
+  .callout-header {
+    font-family: $font-family-sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.65rem 1.25rem;
+  }
+
+  .callout-body { padding: 1rem 1.25rem; font-size: 0.95rem; }
+
+  &.callout-note {
+    border-left: 4px solid var(--accent);
+    .callout-header { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
+  }
+
+  &.callout-warning {
+    border-left: 4px solid #F59E0B;
+    .callout-header { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+  }
+
+  &.callout-important {
+    border-left: 4px solid #EF4444;
+    .callout-header { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+  }
+
+  &.callout-tip {
+    border-left: 4px solid #10B981;
+    .callout-header { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+  }
+}
+
+// ─── Tables ──────────────────────────────────────────────────────────────────
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95rem;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 1px 4px var(--shadow);
+
+  thead {
+    background: var(--border);
+    th {
+      font-family: $font-family-sans-serif;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 600;
+      color: var(--text-primary);
+      padding: 0.75rem 1rem;
+      border: none;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition);
+      &:hover { background: color-mix(in srgb, var(--border) 50%, transparent); }
+      &:last-child { border-bottom: none; }
+    }
+    td {
+      padding: 0.65rem 1rem;
+      border: none;
+      vertical-align: top;
+    }
+  }
+}
+
+// ─── Footer ──────────────────────────────────────────────────────────────────
+.nav-footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 2rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  opacity: 0.6;
+
+  a {
+    color: var(--accent);
+    font-weight: 500;
+    &:hover { opacity: 0.75; text-decoration: none; }
+  }
+}
+
+// ─── Page Navigation ─────────────────────────────────────────────────────────
+.page-navigation {
+  border-top: 1px solid var(--border);
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+
+  a {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: all var(--transition);
+    flex: 1;
+    text-decoration: none;
+
+    &:hover {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 6%, var(--bg-secondary));
+      color: var(--accent);
+    }
+
+    .nav-page-text { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; margin-bottom: 0.25rem; }
+    .nav-page-title { font-weight: 500; }
+  }
+}
+
+// ─── Back to top ─────────────────────────────────────────────────────────────
+#quarto-back-to-top {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-size: 0.82rem;
+  font-family: $font-family-monospace;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity var(--transition);
+  box-shadow: 0 4px 12px rgba(4, 149, 115, 0.3);
+
+  &:hover { opacity: 0.85; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LANDING PAGE & CUSTOM APP STYLES
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Index / Landing Page ────────────────────────────────────────────────────
+.hero-section {
+  padding: 2rem 0 3rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 3rem;
+
+  .hero-tag {
+    display: inline-block;
+    font-family: $font-family-monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    padding: 0.3rem 0.75rem;
+    border-radius: 100px;
+    margin-bottom: 1.25rem;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    font-family: $font-family-sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 1.25rem;
+    color: var(--text-primary);
+
+    span { color: var(--accent); }
+  }
+
+  .hero-desc {
+    font-size: 1.15rem;
+    opacity: 0.65;
+    max-width: 540px;
+    line-height: 1.8;
+  }
+}
+
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.course-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+
+  &:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow-md);
+    text-decoration: none;
+
+    &::before { opacity: 1; }
+    .course-title { color: var(--accent); }
+  }
+
+  .course-category {
+    font-family: $font-family-monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    opacity: 0.75;
+  }
+
+  .course-title {
+    font-family: $font-family-sans-serif;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    line-height: 1.35;
+    transition: color var(--transition);
+  }
+
+  .course-desc {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    opacity: 0.55;
+    line-height: 1.6;
+    margin-top: 0.25rem;
+  }
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 2.5rem 0 1rem;
+
+  h2 {
+    font-family: $font-family-sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-primary);
+    opacity: 0.5;
+    margin: 0;
+  }
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+}
+
+// ─── App / Migrador SLEP ───────────────────────────────────────────────────
+.slep-app {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0.5rem 0;
+
+  .upload-box {
+    background: var(--bg-secondary);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    transition: all var(--transition);
+
+    strong {
+      display: block;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    small {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      opacity: 0.6;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    code {
+      background: transparent;
+      padding: 0;
+      font-size: 0.9em;
+    }
+
+    input[type="file"] {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      max-width: 100%;
+    }
+
+    &:hover,
+    &.dragover {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 5%, var(--bg-secondary));
+    }
+  }
+
+  .file-tag {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding: 0.35rem 0.9rem;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    border: 1px solid var(--accent);
+    border-radius: 100px;
+    font-family: $font-family-monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 600;
+
+    &::before {
+      content: "✓";
+      font-size: 0.75rem;
+    }
+
+    &.visible {
+      display: inline-flex;
+    }
+  }
+
+  .actions {
+    text-align: center;
+    margin: 2rem 0;
+  }
+
+  #btn-procesar {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.8rem 2rem;
+    font-family: $font-family-sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: 0 4px 14px rgba(149, 4, 4, 0.25);
+
+    &:hover:not(:disabled) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(149, 4, 4, 0.35);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background: var(--border);
+      color: var(--text-primary);
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+
+  #log {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    font-family: $font-family-monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    opacity: 0.9;
+    min-height: 3.5rem;
+    max-height: 280px;
+    overflow-y: auto;
+
+    &:empty::before {
+      content: "Esperando archivos…";
+      opacity: 0.35;
+      font-style: italic;
+    }
+
+    .log-error   { color: #EF4444; }
+    .log-success { color: #10B981; }
+    .log-info    { color: var(--accent); }
+    .log-warn    { color: #F59E0B; }
+  }
+
+  #downloads {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+
+    h3 {
+      margin: 0 0 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-primary);
+      opacity: 0.6;
+    }
+  }
+
+  #download-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &::before {
+        content: "↓";
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      a {
+        color: var(--accent);
+        font-weight: 500;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+      }
+    }
+  }
+}
+
+// ─── Breadcrumbs ─────────────────────────────────────────────────────────────
+nav.quarto-page-breadcrumbs {
+  --bs-breadcrumb-bg: transparent;
+  background: transparent !important;
+  .breadcrumb { font-size: 0.82rem; margin: 0; background: transparent; }
+
+  .breadcrumb-item {
+    color: var(--text-primary) !important;
+    opacity: 0.55;
+
+    &.active { color: var(--text-primary) !important; }
+
+    + .breadcrumb-item::before { color: var(--text-primary) !important; opacity: 0.3; }
+
+    a {
+      color: var(--text-primary) !important;
+      opacity: 0.55;
+      text-decoration: none;
+      transition: opacity var(--transition), color var(--transition);
+
+      &:hover { color: var(--accent) !important; opacity: 1; text-decoration: none; }
+    }
+  }
+}
+
+// Quarto duplicates breadcrumb when section href == page href.
+// Hide the nav entirely when all items share the same href.
+.quarto-page-breadcrumbs .breadcrumb-item + .breadcrumb-item:last-child {
+  &:has(a[href]:only-of-type) {
+    // can't compare hrefs in CSS — handle via JS snippet below
+  }
+}
+
+// Hide breadcrumb when only one item exists (degenerate case)
+.quarto-page-breadcrumbs:has(.breadcrumb-item:only-child) {
+  display: none;
+}
+
+// ─── Math (KaTeX / MathJax) ──────────────────────────────────────────────────
+.math { font-size: 1.05em; }
