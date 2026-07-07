@@ -39,7 +39,7 @@ RE_RESOL = {
 }
 
 RE_ESTABLECIMIENTO = {
-    "Escuela #334 Luis Cruz Martinez": [
+    "Escuela #334 Luis Cruz Martínez": [
         r"esc\.?\s*n[°o]?\s*334\s*luis\s*cruz\s*martinez",
         r"escuela\s*n[°o]?\s*334\s*luis\s*cruz\s*martinez",
     ],
@@ -49,7 +49,7 @@ RE_ESTABLECIMIENTO = {
     "Escuela N°336 Estado de Michigan": [
         r"esc\.?\s*n[°o]?\s*336\s*estado\s*de\s*michigan",
     ],
-    "Escuela N°337 El Manio": [
+    "Escuela N°337 El Mañío": [
         r"esc\.?\s*n[°o]?\s*337\s*el\s*manio",
         r"esc\.?\s*n[°o]?\s*337\s*el\s*manio",
     ],
@@ -57,7 +57,7 @@ RE_ESTABLECIMIENTO = {
         r"escuela\s*d-?120\s*horacio\s*johnson",
         r"escuela\s*d-?120\s*horacio\s*johnson\s*gana",
     ],
-    "Escuela D-124 Eloisa Diaz Insunza": [
+    "Escuela D-124 Eloísa Díaz Insunza": [
         r"escuela\s*e-?124\s*dra?\.?\s*eloisa\s*diaz\s*insunza",
         r"escuela\s*d-?124\s*eloisa\s*diaz\s*insunza",
     ],
@@ -66,26 +66,131 @@ RE_ESTABLECIMIENTO = {
         r"escuela\s*profesor\s*humberto\s*aranda\s*iribarren",
         r"escuela\s*especial\s*profesor\s*humberto\s*aranda\s*iribarren\s*e-?153",
     ],
-    "Escuela N°1584 Maria Luisa Sepulveda": [
+    "Escuela N°1584 María Luisa Sepúlveda": [
         r"escuela\s*n[°o]?\s*1584\s*maria\s*luisa\s*sepulveda",
     ],
     "Escuela N° 1963 Ana Frank": [
         r"escuela\s*n[°o]?\s*1963\s*ana\s*frank",
     ],
-    "Jardin Infantil Rigoberto Puebla": [
+    "Jardín Infantil Rigoberto Puebla": [
         r"jardin\s*infantil\s*rigoberto\s*puebla\s*pizarro",
         r"jardin\s*infantil\s*rigoberto\s*puebla",
     ],
-    "Liceo A-33 Federico Garcia Lorca": [
+    "Liceo A-33 Federico García Lorca": [
         r"liceo\s*a-?33\s*poeta\s*federico\s*garcia\s*lorca",
         r"liceo\s*a-?33\s*federico\s*garcia\s*lorca",
     ],
-    "Liceo A-41 Abdon Cifuentes": [
+    "Liceo A-41 Abdón Cifuentes": [
         r"liceo\s*a-?41\s*polivalente\s*abdon\s*cifuentes",
         r"liceo\s*a-?41\s*abdon\s*cifuentes",
     ],
     "Liceo D-135 Almirante Riveros": [
         r"liceo\s*d-?135\s*almirante\s*(galvarino\s*)?riveros",
+    ],
+    "Escuela D-339 Poeta Eusebio Lillo": [
+        r"escuela\s*d-?339\s*poeta\s*eusebio\s*lillo",
+    ],
+    "Escuela D-338 Allipén": [
+        r"escuela\s*d-?338\s*allipen",
+    ],
+    "Escuela D-151 Pedro Aguirre Cerda": [
+        r"escuela\s*d-?151\s*pedro\s*aguirre\s*cerda",
+    ],
+    "Escuela D-144 Valle del Inca": [
+        r"escuela\s*d-?144\s*valle\s*del\s*inca",
+    ],
+    "Escuela E-140 Likan Antai": [
+        r"escuela\s*e-?140\slikan\s*antai",
+    ],
+    "Escuela D-139 Araucarias de Chile": [
+        r"escuela\s*d-?139\s*araucarias\s*de\s*chile",
+    ],
+    "Escuela F-127 Camilo Henríquez": [
+        r"escuela\s*f-?127\s*camilo\s*henriquez",
+    ],
+    "Escuela E-125 Aviador Dagoberto Godoy": [
+        r"escuela\s*e-?125\s*aviador\s*dagoberto\s*godoy",
+    ],
+    "Escuela E-118 Atenea": [
+        r"escuela\s*e-?118\s*atenea",
+    ],
+    "Escuela D-116 Sol Naciente": [
+        r"escuela\s*d-?116\s*sol\s*naciente",
+    ],
+    "Escuela D-114 José Alejandro Bernales": [
+        r"escuela\s*d-?114\s*jose\s*alejandro\s*bernales",
+    ],
+    "Escuela D-110 Unesco": [
+        r"escuela\s*d-?110\s*unesco",
+    ],
+    "Escuela N°1668 Valle de la Luna": [
+        r"escuela\s*n[°o]?\s*1668\s*valle\s*de\s*la\s*luna",
+    ],
+    "Escuela N°1968 Pucará Lasana": [
+        r"escuela\s*n[°o]?\s*1968\s*pucara\s*lasana",
+    ],
+    "Jardín Infantil y sala cuna Doña Letizia": [
+        r"jardin\s*infantil\s*y\s*sala\s*cuna\s*dona\s*letizia",
+    ],
+    "Jardín Infantil y sala cuna Allipén": [
+        r"jardin\s*infantil\s*y\s*sala\s*cuna\s*allipen",
+    ],
+    "Jardín Infantil y sala cuna Ayenhué": [
+        r"jardin\s*infantil\s*y\s*sala\s*cuna\s*ayenhue",
+    ],
+    "Jardín Infantil Ayin Antu": [
+        r"jardin\s*infantil\s*ayin\s*antu",
+    ],
+    "Jardín Infantil Juan XXIII": [
+        r"jardin\s*infantil\s*juan\s*xxiii",
+    ],
+    "Jardín Infantil Peumayén": [
+        r"jardin\s*infantil\s*peumayen",
+    ],
+    "Jardín Infantil Elena Caffarena": [
+        r"jardin\s*infantil\s*elena\s*caffarena",
+    ],
+    "Jardín Infantil Manuel Guerrero": [
+        r"jardin\s*infantil\s*manuel\s*guerrero",
+    ],
+    "Jardín Infantil José Manuel Parada": [
+        r"jardin\s*infantil\s*jose\s*manuel\s*parada",
+    ],
+    "Jardín Infantil Colmenita": [
+        r"jardin\s*infantil\s*colmenita",
+    ],
+    "Jardín Infantil Los Molinos": [
+        r"jardin\s*infantil\s*los\s*molinos",
+    ],
+    "Jardín Infantil Andrés Aylwin Azócar": [
+        r"jardin\s*infantil\s*andres\s*aylwin\s*azocar",
+    ],
+    "Jardín Infantil Beato Padre Hurtado": [
+        r"jardin\s*infantil\s*beato\s*padre\s*hurtado",
+    ],
+    "Jardín Infantil Hugo Marchant": [
+        r"jardin\s*infantil\s*hugo\s*marchant",
+    ],
+    "Jardín Infantil Gabriela Mistral": [
+        r"jardin\s*infantil\s*gabriela\s*mistral",
+    ],
+    "Jardín Infantil Parinacota": [
+        r"jardin\s*infantil\s*parinacota",
+    ],
+    "Sala Cuna Pascual Gambino": [
+        r"sala\s*cuna\s*pascual\s*gambino",
+    ],
+    "Liceo Técnico Profesional José Miguel Carrera": [
+        r"liceo\s*tecnico\s*profesional\s*jose\s*miguel\s*carrera",
+    ],
+    "Liceo Municipal Alcalde Jorge Indo": [
+        r"liceo\s*municipal\s*alcalde\s*jorge\s*indo",
+    ],
+    "Liceo Bicentenario Francisco Bilbao Barquín": [
+        r"liceo\s*bicentenario\s*francisco\s*bilbao\s*barquin",
+    ],
+    "Liceo Municipal de Adultos Poeta Vicente Huidobro": [
+        r"liceo\s*municipal\s*de\s*adultos\s*poeta\s*vicente\s*huidobro",
     ],
     "Servicio Local Los Libertadores": [
         r"direccion\s*ejecutiva",
@@ -118,3 +223,5 @@ MESES_MAP = {
     "MAYO": "05", "JUNIO": "06", "JULIO": "07", "AGOSTO": "08",
     "SEPTIEMBRE": "09", "OCTUBRE": "10", "NOVIEMBRE": "11", "DICIEMBRE": "12",
 }
+
+EXCEL_ERRORS = {"#error!", "#n/a", "#ref!", "#value!", "#num!", "#name?", "#null!", "#div/0!", "#n/d"}
