@@ -395,8 +395,8 @@ def construir_dim_afp(hojas_hechos):
 def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                    TIPO_LICENCIA_CANON, INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON):
     nuevos_establecimientos = {}
-    salida = []
-    vistos = set()  # para deduplicación
+    salida = {}     # dedup_key -> registro (quedarse con la fuente más reciente)
+    vistos = {}     # dedup_key -> año de la fuente
     tasas_conocidas = {} # Precalcular tasas conocidas por AFP para filas sin tasa explícita
     for _, ws2, hrow2, headers2 in hojas_hechos:
         if "A.F.P." not in headers2:
@@ -500,21 +500,30 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
             # ── Extraer ambos bloques de montos ──
             montos = extraer_montos_dobles(headers, row)
 
-            # ── Deduplicación por llave compuesta ──
+                        # ── Deduplicación: mismo evento de licencia en fuentes distintas ──
+            # Si un folio aparece en varias hojas, quedarse con la fuente de mayor año.
+            # La clave usa RUT + Folio + Fecha Inicio (no incluye Fecha Término ni Fuente).
             folio = get_by_any(headers, row, "Folio licencia", "Folio Minsal")
             fecha_ini = get_by_any(headers, row, "Fecha Inicio", "Fech. Inicio")
             fecha_ter = get_by_any(headers, row, "Fecha Termino", "Fech. Termino")
-            dedup_key = (str(rut or ""), str(folio or ""), str(fecha_ini or ""), str(fecha_ter or ""))
-            if dedup_key in vistos:
-                continue
-            vistos.add(dedup_key)
+            
+            dedup_key = (
+                str(rut or ""),
+                str(folio or ""),
+                str(fecha_ini or ""),
+            )
+            m_anio = re.search(r'(\d{4})', name)
+            anio_fuente = int(m_anio.group(1)) if m_anio else 0
+            
+            if dedup_key in vistos and anio_fuente <= vistos[dedup_key]:
+                continue  # ya existe registro de fuente igual o más reciente
+            vistos[dedup_key] = anio_fuente
 
-            # FIX: validar coherencia de fechas
             if (fecha_ini and fecha_ter and isinstance(fecha_ini, datetime)
                     and isinstance(fecha_ter, datetime) and fecha_ter < fecha_ini):
                 estado_migracion.append("Fecha Termino anterior a Fecha Inicio")
 
-            salida.append({
+            salida[dedup_key] = {
                 "rut": rut or (norm_rut(rut_raw) or ""),
                 "nombre": func["nombre"] if func else (nombre_raw or ""),
                 "fecha_nacimiento": func["fecha_nacimiento"] if func else None,
@@ -538,9 +547,9 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                 ),
                 "origen": name,
                 "estado_migracion": "; ".join(estado_migracion) if estado_migracion else "OK",
-            })
+            }
 
-    return salida, nuevos_establecimientos
+    return list(salida.values()), nuevos_establecimientos
 
 
 def migrar_descuentos(hojas_hechos):
