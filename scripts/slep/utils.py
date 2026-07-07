@@ -1,8 +1,10 @@
-"""Utilidades de normalizacion de texto y RUT, sin dependencias del resto del paquete."""
+"""Utilidades: manejo de errores, normalizacion de texto y RUT"""
 
 import re
 import unicodedata
+from .constants import EXCEL_ERRORS
 
+# Text utils
 def strip_accents(s: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
 
@@ -25,3 +27,17 @@ def get_by_any(headers, row, *names):
         if n in headers:
             return row[headers.index(n)]
     return None
+
+# Excel utils
+def _is_excel_error(v):
+    """Detecta si un valor es un error cacheado de Excel."""
+    if v is None:
+        return False
+    return str(v).strip().lower() in EXCEL_ERRORS
+
+
+def _clean_excel_error(v, default=None):
+    """Reemplaza errores de Excel por un valor por defecto."""
+    if _is_excel_error(v):
+        return default
+    return v

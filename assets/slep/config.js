@@ -4,7 +4,7 @@
 export const SLEP_MODULES = [
   "__init__.py",
   "constants.py",
-  "text_utils.py",
+  "utils.py",
   "core.py",
 ];
 
