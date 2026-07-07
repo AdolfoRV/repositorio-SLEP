@@ -21,7 +21,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table
 
 from .constants import RE_TIPO, RE_INST, RE_RESOL, RE_ESTABLECIMIENTO, AFP_MAP, MESES_MAP
-from .text_utils import norm, norm_rut, get_by_any
+from .utils import norm, norm_rut, _is_excel_error, get_by_any
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CLASIFICADORES
@@ -50,6 +50,8 @@ def extraer_valores_unicos(hojas_hechos, *alt_names):
 
 
 def clasificar_generico(raw, canon_list, patterns, cutoff=0.6):
+    if _is_excel_error(raw):
+        return None, "Vacio (error Excel)"
     n = norm(raw)
     if not n:
         return None, "Vacio"
@@ -64,6 +66,8 @@ def clasificar_generico(raw, canon_list, patterns, cutoff=0.6):
 
 
 def clasificar_resolucion(raw, canon_list):
+    if _is_excel_error(raw):
+        return None, "Vacio (error Excel)"
     n = norm(raw)
     if not n:
         return None, "Vacio"
@@ -82,6 +86,8 @@ def clasificar_resolucion(raw, canon_list):
 def clasificar_afp(raw):
     if not raw or not str(raw).strip():
         return None, None, "Vacio"
+    if _is_excel_error(raw):
+        return None, None, "Vacio (error Excel)"
     m = re.match(r"^([^\(]+?)\s*(?:\(([\d.,]+)\))?\s*$", str(raw).strip())
     if not m:
         return raw, None, "REVISAR: no reconocido"
@@ -103,6 +109,8 @@ def clasificar_afp(raw):
 
 
 def clasificar_establecimiento(raw, catalogo_norm, catalogo_patterns):
+    if _is_excel_error(raw):
+        return None, "Vacio (error Excel)"
     n = norm(raw)
     if not n:
         return None, "Vacio"
@@ -325,14 +333,19 @@ def leer_dim_establecimiento(data_bytes):
     idx_web = headers.index("Sitio web") if "Sitio web" in headers else None
 
     establecimientos = []
+    vistos = set()
     for r in range(header_row + 1, ws.max_row + 1):
         tipo = ws.cell(r, idx_tipo + 1).value if idx_tipo is not None else None
         nombre = ws.cell(r, idx_nombre + 1).value if idx_nombre is not None else None
         if not nombre or not str(nombre).strip():
             continue
+        nombre_limpio = str(nombre).strip()
+        if nombre_limpio in vistos:
+            continue
+        vistos.add(nombre_limpio)
         establecimientos.append({
             "tipo": tipo,
-            "establecimiento": str(nombre).strip(),
+            "establecimiento": nombre_limpio,
             "comuna": ws.cell(r, idx_comuna + 1).value if idx_comuna is not None else None,
             "direccion": ws.cell(r, idx_direccion + 1).value if idx_direccion is not None else None,
             "telefono": ws.cell(r, idx_telefono + 1).value if idx_telefono is not None else None,
@@ -346,6 +359,21 @@ def leer_dim_establecimiento(data_bytes):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def construir_dim_afp(hojas_hechos):
+    # AFPs canónicas válidas: las del mapa + No Aplica
+    afps_validas = set(AFP_MAP.values()) | {"No Aplica"}
+
+    # Paso 1: extraer tasas conocidas por AFP (de cualquier hoja)
+    tasas_conocidas = {}
+    for _, ws, hrow, headers in hojas_hechos:
+        if "A.F.P." not in headers:
+            continue
+        idx = headers.index("A.F.P.")
+        for r in range(hrow + 1, ws.max_row + 1):
+            canon, tasa, _ = clasificar_afp(ws.cell(r, idx + 1).value)
+            if canon and canon in afps_validas and "no aplica" not in canon.lower() and tasa is not None:
+                tasas_conocidas[canon] = tasa
+
+    # Paso 2: indexar solo AFPs válidas observadas
     vistos = {}
     for _, ws, hrow, headers in hojas_hechos:
         if "A.F.P." not in headers:
@@ -353,15 +381,31 @@ def construir_dim_afp(hojas_hechos):
         idx = headers.index("A.F.P.")
         for r in range(hrow + 1, ws.max_row + 1):
             canon, tasa, _ = clasificar_afp(ws.cell(r, idx + 1).value)
-            if canon and "no aplica" not in canon.lower() and tasa is not None:
+            if canon and canon in afps_validas and "no aplica" not in canon.lower():
+                if tasa is None:
+                    tasa = tasas_conocidas.get(canon, -1)
                 vistos[(canon, tasa)] = vistos.get((canon, tasa), 0) + 1
-    return [{"afp": k[0], "tasa": k[1]} for k, _ in sorted(vistos.items(), key=lambda x: (x[0][0], -x[0][1]))]
 
+    # Asegurar registros fijos en Dim_AFP
+    vistos[("No Aplica", 0)] = vistos.get(("No Aplica", 0), 0)
+    vistos[("Pensionado (no aplica AFP)", 0)] = vistos.get(("Pensionado (no aplica AFP)", 0), 0)
+
+    return [{"afp": k[0], "tasa": k[1]} for k, _ in sorted(vistos.items(), key=lambda x: (x[0][0], -x[0][1]))]
 
 def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                    TIPO_LICENCIA_CANON, INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON):
     nuevos_establecimientos = {}
     salida = []
+    vistos = set()  # para deduplicación
+    tasas_conocidas = {} # Precalcular tasas conocidas por AFP para filas sin tasa explícita
+    for _, ws2, hrow2, headers2 in hojas_hechos:
+        if "A.F.P." not in headers2:
+            continue
+        idx2 = headers2.index("A.F.P.")
+        for r2 in range(hrow2 + 1, ws2.max_row + 1):
+            canon2, tasa2, _ = clasificar_afp(ws2.cell(r2, idx2 + 1).value)
+            if canon2 and "no aplica" not in canon2.lower() and tasa2 is not None:
+                tasas_conocidas[canon2] = tasa2
 
     for name, ws, hrow, headers in hojas_hechos:
         for r in range(hrow + 1, ws.max_row + 1):
@@ -382,10 +426,31 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                     rut = nombres_idx[cand[0]]
                     func = funcionarios.get(rut)
 
+            # FIX: crear placeholder en Dim_Funcionario para evitar RUTs huérfanos
             if func is None:
                 estado_migracion.append("RUT/Nombre no encontrado en Dim_Funcionario")
+                if rut and rut not in funcionarios:
+                    funcionarios[rut] = {
+                        "rut": rut,
+                        "nombre": (nombre_raw or "").strip(),
+                        "fecha_nacimiento": None,
+                        "sexo": None,
+                        "estado_civil": None,
+                        "direccion": None,
+                        "comuna": None,
+                        "telefono": None,
+                        "telefono_emergencia": None,
+                        "nacionalidad": None,
+                        "formacion_profesional": None,
+                        "cargo": None,
+                        "establecimiento": None,
+                    }
+                func = funcionarios.get(rut)
 
-            estab_raw = get_by_any(headers, row, "Estableciemiento", "Establecimiento", "Unidad")
+            # ── Establecimiento: buscar en múltiples columnas posibles ──
+            estab_raw = get_by_any(headers, row,
+                "Estableciemiento", "Establecimiento", "Unidad",
+                "Centro de Costo", "Lugar", "Sede", "Ubicacion")
             estab_canon = None
             if estab_raw:
                 estab_canon, est_estado = clasificar_establecimiento(estab_raw, catalogo_norm, catalogo_patterns)
@@ -395,6 +460,7 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                 elif est_estado != "OK" and not est_estado.startswith("OK"):
                     estado_migracion.append("Establecimiento: " + est_estado)
             else:
+                # Fallback: usar el del funcionario; si es None, dejarlo como None
                 estab_canon = func["establecimiento"] if func else None
                 if estab_canon:
                     estab_canon2, est_estado2 = clasificar_establecimiento(estab_canon, catalogo_norm, catalogo_patterns)
@@ -415,6 +481,13 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
             afp_canon, tasa, afp_estado = clasificar_afp(get_by_any(headers, row, "A.F.P."))
             if afp_estado not in ("OK", "Vacio"):
                 estado_migracion.append("AFP: " + afp_estado)
+                afp_canon = "No Aplica"
+                tasa = 0
+            if tasa is None and afp_canon:
+                if "no aplica" in afp_canon.lower():
+                    tasa = 0
+                else:
+                    tasa = tasas_conocidas.get(afp_canon, -1)
 
             resol_raw = get_by_any(headers, row, "Resolución Médica", "Resolucion Medica")
             resol_canon, resol_estado = clasificar_resolucion(resol_raw, RESOLUCION_MEDICA_CANON)
@@ -427,20 +500,34 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
             # ── Extraer ambos bloques de montos ──
             montos = extraer_montos_dobles(headers, row)
 
+            # ── Deduplicación por llave compuesta ──
+            folio = get_by_any(headers, row, "Folio licencia", "Folio Minsal")
+            fecha_ini = get_by_any(headers, row, "Fecha Inicio", "Fech. Inicio")
+            fecha_ter = get_by_any(headers, row, "Fecha Termino", "Fech. Termino")
+            dedup_key = (str(rut or ""), str(folio or ""), str(fecha_ini or ""), str(fecha_ter or ""))
+            if dedup_key in vistos:
+                continue
+            vistos.add(dedup_key)
+
+            # FIX: validar coherencia de fechas
+            if (fecha_ini and fecha_ter and isinstance(fecha_ini, datetime)
+                    and isinstance(fecha_ter, datetime) and fecha_ter < fecha_ini):
+                estado_migracion.append("Fecha Termino anterior a Fecha Inicio")
+
             salida.append({
                 "rut": rut or (norm_rut(rut_raw) or ""),
                 "nombre": func["nombre"] if func else (nombre_raw or ""),
                 "fecha_nacimiento": func["fecha_nacimiento"] if func else None,
                 "sexo": func["sexo"] if func else get_by_any(headers, row, "Sexo"),
                 "establecimiento": estab_canon,
-                "folio_licencia": get_by_any(headers, row, "Folio licencia", "Folio Minsal"),
-                "fecha_inicio": get_by_any(headers, row, "Fecha Inicio", "Fech. Inicio"),
-                "fecha_termino": get_by_any(headers, row, "Fecha Termino", "Fech. Termino"),
+                "folio_licencia": folio,
+                "fecha_inicio": fecha_ini,
+                "fecha_termino": fecha_ter,
                 "dias_lm": get_by_any(headers, row, "Días LM", "Días Lic"),
                 "tipo_licencia": tipo_canon,
                 "institucion_salud": inst_canon,
                 "afp": afp_canon or "No Aplica",
-                "tasa_afp": tasa or 0,
+                "tasa_afp": tasa if tasa is not None else 0,
                 "resolucion_medica": resol_canon,
                 **montos,
                 "observaciones": " | ".join(
@@ -638,9 +725,16 @@ def escribir_dim_funcionario(funcionarios):
 
 
 def escribir_dim_establecimiento(establecimientos):
+    # Deduplicar por nombre
+    vistos = set()
+    unicos = []
+    for e in sorted(establecimientos, key=lambda x: x["establecimiento"]):
+        if e["establecimiento"] not in vistos:
+            vistos.add(e["establecimiento"])
+            unicos.append(e)
     rows = [
         [e["establecimiento"], e["tipo"], e.get("comuna"), e.get("direccion"), e.get("telefono"), e.get("sitio_web")]
-        for e in sorted(establecimientos, key=lambda x: x["establecimiento"])
+        for e in unicos
     ]
     return _escribir_dim("Establecimiento", ["Establecimiento", "Tipo", "Comuna", "Direccion", "Telefono", "Sitio Web"], rows)
 
@@ -706,7 +800,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
     ]
     n_func = _add_ref(wb, "ref_Funcionario", ["RUT", "Nombre", "Fecha Nacimiento", "Sexo", "Establecimiento"], func_rows)
 
-    afp_rows = [[f["afp"], f["tasa"]] for f in afp_filas] + [["No Aplica", 0]]
+    afp_rows = [[f["afp"], f["tasa"]] for f in afp_filas]
     n_afp = _add_ref(wb, "ref_AFP", ["AFP", "Tasa"], afp_rows)
 
     ref_listas = wb.create_sheet("ref_Listas")
@@ -767,13 +861,20 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
         rut_val = h["rut"] if h else None
         hoja.cell(r, C["RUT"], rut_val)
         f_rut = f"{get_column_letter(C['RUT'])}{r}"
-        for col_name, ref_col in [("Nombre", "B"), ("Fecha Nacimiento", "C"), ("Sexo", "D"), ("Establecimiento", "E")]:
+
+        # FIX: Establecimiento se escribe DIRECTAMENTE desde el hecho, no como fórmula
+        # Solo Nombre, Fecha Nacimiento y Sexo usan fórmula INDEX/MATCH
+        for col_name, ref_col in [("Nombre", "B"), ("Fecha Nacimiento", "C"), ("Sexo", "D")]:
             formula = (
                 '=IFERROR(INDEX(ref_Funcionario!$' + ref_col + '$2:$' + ref_col + '$' + str(n_func)
                 + ',MATCH(' + f_rut + ',ref_Funcionario!$A$2:$A$' + str(n_func) + ',0)),"")'
             )
             hoja.cell(r, C[col_name], formula)
         hoja.cell(r, C["Fecha Nacimiento"]).number_format = "DD-MM-YYYY"
+
+        # Establecimiento: valor directo del hecho (puede ser None)
+        if h:
+            hoja.cell(r, C["Establecimiento"], h["establecimiento"])
 
         if h:
             for campo, header in [
@@ -814,10 +915,14 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
         else:
             hoja.cell(r, C["Aplica Descuentos"], "No")
 
-        # Tasa AFP automática (igual que antes)
-        f_afp = f"{get_column_letter(C['A.F.P.'])}{r}"
-        formula_afp = "=IFERROR(INDEX(ref_AFP!$B$2:$B$" + str(n_afp) + ",MATCH(" + f_afp + ",ref_AFP!$A$2:$A$" + str(n_afp) + ",0)),0)"
-        hoja.cell(r, C["Tasa AFP"], formula_afp)
+        # FIX: Tasa AFP automática. Para filas históricas escribir el valor directo
+        # (dato histórico); para filas nuevas (blancas) dejar la fórmula INDEX/MATCH.
+        if i < n_hist and h and h.get("tasa_afp") is not None:
+            hoja.cell(r, C["Tasa AFP"], h["tasa_afp"])
+        else:
+            f_afp = f"{get_column_letter(C['A.F.P.'])}{r}"
+            formula_afp = "=IFERROR(INDEX(ref_AFP!$B$2:$B$" + str(n_afp) + ",MATCH(" + f_afp + ",ref_AFP!$A$2:$A$" + str(n_afp) + ",0)),0)"
+            hoja.cell(r, C["Tasa AFP"], formula_afp)
         hoja.cell(r, C["Tasa AFP"]).number_format = "0.00"
 
         for c in range(1, ncols + 1):
@@ -876,7 +981,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
     textos = [
         "INSTRUCCIONES - Hechos_Licencias (planilla madre nueva, esquema estrella)",
         "",
-        "1) Escriba el RUT del funcionario. Nombre, Fecha de Nacimiento, Sexo y Establecimiento se completan automaticamente desde Dim_Funcionario.",
+        "1) Escriba el RUT del funcionario. Nombre, Fecha de Nacimiento, Sexo se completan automaticamente desde Dim_Funcionario. Establecimiento se escribe directamente desde el hecho migrado.",
         "",
         "2) 'Tipo Licencia', 'Institucion Salud', 'A.F.P.' y 'Resolucion Medica' tienen lista desplegable. Para agregar valores nuevos, actualice la dimension correspondiente y regenere.",
         "",
