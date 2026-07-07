@@ -773,6 +773,7 @@ def escribir_hechos_descuentos(descuentos):
             ])
 
         _estilizar_header(ws, ncols)
+        ws.row_dimensions[1].height = None   # <-- AGREGA ESTO
         for r in range(2, ws.max_row + 1):
             for c in range(1, ncols + 1):
                 cell = ws.cell(r, c)
@@ -789,6 +790,7 @@ def escribir_hechos_descuentos(descuentos):
         wb.active.title = "Hechos_Descuentos"
         wb.active.append(["Folio Licencia", "RUT", "Periodo", "Monto Descuento", "Fuente"])
         _estilizar_header(wb.active, 5)
+        wb.active.row_dimensions[1].height = None   # <-- Y ESTO
 
     buf = io.BytesIO()
     wb.save(buf)
