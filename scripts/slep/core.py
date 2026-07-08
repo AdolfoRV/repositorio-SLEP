@@ -1097,7 +1097,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
 # PIPELINE (punto de entrada)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None) -> dict:
+def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None, pbit_data: bytes = None) -> dict:
     """Ejecuta el pipeline completo y devuelve un dict {nombre_archivo: bytes},
     incluyendo un 'SLEP_files.zip' con todo junto."""
 
@@ -1212,6 +1212,8 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None) -> dict:
         ),
         "05_Hechos_Descuentos.xlsx": escribir_hechos_descuentos(descuentos),
     }
+    if pbit_data is not None:
+        out["Licencias_Medicas.pbit"] = pbit_data
 
     n_hechos = len(hechos)
     log(f"04_Hechos_Licencias.xlsx generado con {n_hechos + 40} filas ({n_hechos} migradas + filas en blanco).")
@@ -1219,6 +1221,8 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None) -> dict:
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for name, data in out.items():
+            if name == "SLEP_files.zip":
+                continue
             zf.writestr(name, data)
     zip_buf.seek(0)
     out["SLEP_files.zip"] = zip_buf.read()
