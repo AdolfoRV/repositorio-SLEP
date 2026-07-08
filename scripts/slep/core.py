@@ -10,6 +10,7 @@ Uso:
 import io
 import re
 import zipfile
+from collections import Counter
 from datetime import datetime, date
 from difflib import get_close_matches
 
@@ -21,7 +22,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table
 
 from .constants import RE_TIPO, RE_INST, RE_RESOL, RE_ESTABLECIMIENTO, AFP_MAP, MESES_MAP
-from .utils import norm, norm_rut, _is_excel_error, get_by_any
+from .utils import norm, norm_rut, _is_excel_error
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CLASIFICADORES
@@ -41,8 +42,8 @@ def extraer_valores_unicos(hojas_hechos, *alt_names):
             if n not in headers:
                 continue
             idx = headers.index(n)
-            for r in range(hrow + 1, ws.max_row + 1):
-                v = ws.cell(r, idx + 1).value
+            for row in ws.iter_rows(min_row=hrow + 1, values_only=True):
+                v = row[idx]
                 if v is not None and str(v).strip():
                     vals.add(str(v).strip())
             break
@@ -125,32 +126,64 @@ def clasificar_establecimiento(raw, catalogo_norm, catalogo_patterns):
     return raw, "NUEVO: no esta en Dim_Establecimiento, se agrega y debe revisarse"
 
 
-def generar_listas_canonicas(hojas_hechos, re_tipo, re_inst):
-    """Genera las listas canónicas de Tipo Licencia, Institución Salud y Resolución Médica
-    observadas realmente en los datos de origen (para las listas desplegables)."""
+def generar_listas_canonicas(hojas_hechos):
+    """Genera las listas canónicas y el mapeo crudo→canónico para log.
+    Devuelve ((canon_list, clasif), ...) donde clasif es {canon: [valores_crudos]}."""
 
-    def _gen(alt_names, patterns):
-        raw = extraer_valores_unicos(hojas_hechos, *alt_names)
-        clasif = {k: [] for k in patterns}
-        clasif["_sin_clasificar"] = []
-        for r in raw:
-            n = norm(r)
-            if re.fullmatch(r"[\d\.\-]+", n.replace(" ", "")):
-                clasif["_sin_clasificar"].append(r)
-                continue
-            for canon, pats in patterns.items():
-                if any(re.search(p, n) for p in pats):
-                    clasif[canon].append(r)
-                    break
-            else:
-                clasif["_sin_clasificar"].append(r)
-        return sorted([k for k in clasif if k != "_sin_clasificar"])
+    def _extraer(alt_names):
+        vals = set()
+        for _, ws, hrow, headers in hojas_hechos:
+            for n in alt_names:
+                if n not in headers:
+                    continue
+                idx = headers.index(n)
+                for row in ws.iter_rows(min_row=hrow + 1, values_only=True):
+                    v = row[idx]
+                    if v is not None and str(v).strip():
+                        vals.add(str(v).strip())
+                break
+        return vals
 
-    return (
-        _gen(("Tipo Licencia",), re_tipo),
-        _gen(("Institucion Salud", "Institucion Salud"), re_inst),
-        _gen(("Resolucion Medica", "Resolucion Medica", "Estado"), RE_RESOL),
-    )
+    # Tipo Licencia
+    raw_tipo = _extraer(("Tipo Licencia",))
+    tipo_clasif = {}
+    for r in raw_tipo:
+        canon, _ = clasificar_generico(r, list(RE_TIPO.keys()), RE_TIPO)
+        if canon is None:
+            continue
+        if canon in RE_TIPO:
+            tipo_clasif.setdefault(canon, []).append(r)
+        else:
+            tipo_clasif.setdefault("_sin_clasificar", []).append(r)
+    tipo_canon = sorted(RE_TIPO.keys())
+
+    # Institución Salud
+    raw_inst = _extraer(("Institución Salud", "Institucion Salud"))
+    inst_clasif = {}
+    for r in raw_inst:
+        canon, _ = clasificar_generico(r, list(RE_INST.keys()), RE_INST)
+        if canon is None:
+            continue
+        if canon in RE_INST:
+            inst_clasif.setdefault(canon, []).append(r)
+        else:
+            inst_clasif.setdefault("_sin_clasificar", []).append(r)
+    inst_canon = sorted(RE_INST.keys())
+
+    # Resolución Médica
+    raw_resol = _extraer(("Resolución Médica", "Resolucion Medica", "Estado"))
+    resol_clasif = {}
+    for r in raw_resol:
+        canon, _ = clasificar_resolucion(r, list(RE_RESOL.keys()))
+        if canon is None:
+            continue
+        if canon in RE_RESOL:
+            resol_clasif.setdefault(canon, []).append(r)
+        else:
+            resol_clasif.setdefault("_sin_clasificar", []).append(r)
+    resol_canon = sorted(RE_RESOL.keys())
+
+    return (tipo_canon, tipo_clasif), (inst_canon, inst_clasif), (resol_canon, resol_clasif)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -260,32 +293,31 @@ def leer_fuente(data_bytes):
     datos = wb["DATOS"]
     h = [c.value for c in datos[1]]
 
-    def c(name):
-        return h.index(name)
+    # Precalcular índices de columnas (una sola vez)
+    c = {name: i for i, name in enumerate(h)}
 
     funcionarios = {}
     establecimientos_raw = set()
-    for r in range(2, datos.max_row + 1):
-        row = [datos.cell(r, i + 1).value for i in range(len(h))]
-        rut = norm_rut(row[c("RUN")])
+    for row in datos.iter_rows(min_row=2, values_only=True):
+        rut = norm_rut(row[c.get("RUN")])
         if not rut:
             continue
-        cc = (row[c("Centro de Costo")] or "").strip() or None
+        cc = (row[c.get("Centro de Costo")] or "").strip() or None
         if cc:
             establecimientos_raw.add(cc)
         funcionarios[rut] = {
             "rut": rut,
-            "nombre": (row[c("Nombre")] or "").strip(),
-            "fecha_nacimiento": row[c("Fecha Nacimiento")],
-            "sexo": row[c("Sexo")],
-            "estado_civil": row[c("Estado Civil")],
-            "direccion": row[c("Dirección")],
-            "comuna": row[c("Comuna")],
-            "telefono": row[c("Teléfono")],
-            "telefono_emergencia": row[c("Teléfono Emergencia")],
-            "nacionalidad": row[c("Nacionalidad")],
-            "formacion_profesional": row[c("Formación Profesional")],
-            "cargo": row[c("Cargo")],
+            "nombre": (row[c.get("Nombre")] or "").strip(),
+            "fecha_nacimiento": row[c.get("Fecha Nacimiento")],
+            "sexo": row[c.get("Sexo")],
+            "estado_civil": row[c.get("Estado Civil")],
+            "direccion": row[c.get("Dirección")],
+            "comuna": row[c.get("Comuna")],
+            "telefono": row[c.get("Teléfono")],
+            "telefono_emergencia": row[c.get("Teléfono Emergencia")],
+            "nacionalidad": row[c.get("Nacionalidad")],
+            "formacion_profesional": row[c.get("Formación Profesional")],
+            "cargo": row[c.get("Cargo")],
             "establecimiento": cc,
         }
 
@@ -293,8 +325,8 @@ def leer_fuente(data_bytes):
     h1 = [c.value for c in lm1[2]]
     if "Unidad" in h1:
         idxu = h1.index("Unidad")
-        for r in range(3, lm1.max_row + 1):
-            v = lm1.cell(r, idxu + 1).value
+        for row in lm1.iter_rows(min_row=3, values_only=True):
+            v = row[idxu]
             if v:
                 establecimientos_raw.add(str(v).strip())
 
@@ -364,23 +396,25 @@ def construir_dim_afp(hojas_hechos):
 
     # Paso 1: extraer tasas conocidas por AFP (de cualquier hoja)
     tasas_conocidas = {}
-    for _, ws, hrow, headers in hojas_hechos:
-        if "A.F.P." not in headers:
+    for _, ws2, hrow2, headers2 in hojas_hechos:
+        try:
+            idx2 = headers2.index("A.F.P.")
+        except ValueError:
             continue
-        idx = headers.index("A.F.P.")
-        for r in range(hrow + 1, ws.max_row + 1):
-            canon, tasa, _ = clasificar_afp(ws.cell(r, idx + 1).value)
-            if canon and canon in afps_validas and "no aplica" not in canon.lower() and tasa is not None:
-                tasas_conocidas[canon] = tasa
+        for row in ws2.iter_rows(min_row=hrow2 + 1, values_only=True):
+            canon2, tasa2, _ = clasificar_afp(row[idx2])
+            if canon2 and canon2 in afps_validas and "no aplica" not in canon2.lower() and tasa2 is not None:
+                tasas_conocidas[canon2] = tasa2
 
     # Paso 2: indexar solo AFPs válidas observadas
     vistos = {}
     for _, ws, hrow, headers in hojas_hechos:
-        if "A.F.P." not in headers:
+        try:
+            idx = headers.index("A.F.P.")
+        except ValueError:
             continue
-        idx = headers.index("A.F.P.")
-        for r in range(hrow + 1, ws.max_row + 1):
-            canon, tasa, _ = clasificar_afp(ws.cell(r, idx + 1).value)
+        for row in ws.iter_rows(min_row=hrow + 1, values_only=True):
+            canon, tasa, _ = clasificar_afp(row[idx])
             if canon and canon in afps_validas and "no aplica" not in canon.lower():
                 if tasa is None:
                     tasa = tasas_conocidas.get(canon, -1)
@@ -392,30 +426,58 @@ def construir_dim_afp(hojas_hechos):
 
     return [{"afp": k[0], "tasa": k[1]} for k, _ in sorted(vistos.items(), key=lambda x: (x[0][0], -x[0][1]))]
 
+
 def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                    TIPO_LICENCIA_CANON, INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON):
     nuevos_establecimientos = {}
     salida = {}     # dedup_key -> registro (quedarse con la fuente más reciente)
     vistos = {}     # dedup_key -> año de la fuente
     tasas_conocidas = {} # Precalcular tasas conocidas por AFP para filas sin tasa explícita
+
     for _, ws2, hrow2, headers2 in hojas_hechos:
-        if "A.F.P." not in headers2:
+        try:
+            idx2 = headers2.index("A.F.P.")
+        except ValueError:
             continue
-        idx2 = headers2.index("A.F.P.")
-        for r2 in range(hrow2 + 1, ws2.max_row + 1):
-            canon2, tasa2, _ = clasificar_afp(ws2.cell(r2, idx2 + 1).value)
+        for row in ws2.iter_rows(min_row=hrow2 + 1, values_only=True):
+            canon2, tasa2, _ = clasificar_afp(row[idx2])
             if canon2 and "no aplica" not in canon2.lower() and tasa2 is not None:
                 tasas_conocidas[canon2] = tasa2
 
     for name, ws, hrow, headers in hojas_hechos:
-        for r in range(hrow + 1, ws.max_row + 1):
-            row = [ws.cell(r, i + 1).value for i in range(len(headers))]
-            rut_raw = get_by_any(headers, row, "Rut")
-            if rut_raw is None and get_by_any(headers, row, "Folio licencia") is None:
+        # --- PRECÁLCULO DE ÍNDICES (una sola vez por hoja) ---
+        def _idx(*names):
+            for n in names:
+                if n in headers:
+                    return headers.index(n)
+            return None
+
+        ix = {
+            "rut": _idx("Rut"),
+            "folio": _idx("Folio licencia", "Folio Minsal"),
+            "nombre": _idx("Nombre"),
+            "fecha_ini": _idx("Fecha Inicio", "Fech. Inicio"),
+            "fecha_ter": _idx("Fecha Termino", "Fech. Termino"),
+            "dias_lm": _idx("Días LM", "Días Lic"),
+            "tipo": _idx("Tipo Licencia"),
+            "inst": _idx("Institución Salud", "Institucion Salud"),
+            "afp": _idx("A.F.P."),
+            "resol": _idx("Resolución Médica", "Resolucion Medica"),
+            "estado": _idx("Estado"),
+            "obs1": _idx("Observaciones"),
+            "obs2": _idx("Observaciones 2"),
+            "sexo": _idx("Sexo"),
+            "estab": _idx("Estableciemiento", "Establecimiento", "Unidad",
+                           "Centro de Costo", "Lugar", "Sede", "Ubicacion"),
+        }
+
+        for row in ws.iter_rows(min_row=hrow + 1, values_only=True):
+            rut_raw = row[ix["rut"]] if ix["rut"] is not None else None
+            if rut_raw is None and (ix["folio"] is None or row[ix["folio"]] is None):
                 continue
 
             rut = norm_rut(rut_raw)
-            nombre_raw = get_by_any(headers, row, "Nombre")
+            nombre_raw = row[ix["nombre"]] if ix["nombre"] is not None else None
             estado_migracion = []
             func = funcionarios.get(rut) if rut else None
 
@@ -448,9 +510,7 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                 func = funcionarios.get(rut)
 
             # ── Establecimiento: buscar en múltiples columnas posibles ──
-            estab_raw = get_by_any(headers, row,
-                "Estableciemiento", "Establecimiento", "Unidad",
-                "Centro de Costo", "Lugar", "Sede", "Ubicacion")
+            estab_raw = row[ix["estab"]] if ix["estab"] is not None else None
             estab_canon = None
             if estab_raw:
                 estab_canon, est_estado = clasificar_establecimiento(estab_raw, catalogo_norm, catalogo_patterns)
@@ -469,16 +529,17 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                     estab_canon = estab_canon2
 
             tipo_canon, tipo_estado = clasificar_generico(
-                get_by_any(headers, row, "Tipo Licencia"), TIPO_LICENCIA_CANON, RE_TIPO)
+                row[ix["tipo"]] if ix["tipo"] is not None else None, TIPO_LICENCIA_CANON, RE_TIPO)
             if tipo_estado not in ("OK", "Vacio"):
                 estado_migracion.append("Tipo Licencia: " + tipo_estado)
 
             inst_canon, inst_estado = clasificar_generico(
-                get_by_any(headers, row, "Institución Salud", "Institucion Salud"), INSTITUCION_SALUD_CANON, RE_INST)
+                row[ix["inst"]] if ix["inst"] is not None else None, INSTITUCION_SALUD_CANON, RE_INST)
             if inst_estado not in ("OK", "Vacio"):
                 estado_migracion.append("Institucion Salud: " + inst_estado)
 
-            afp_canon, tasa, afp_estado = clasificar_afp(get_by_any(headers, row, "A.F.P."))
+            afp_canon, tasa, afp_estado = clasificar_afp(
+                row[ix["afp"]] if ix["afp"] is not None else None)
             if afp_estado not in ("OK", "Vacio"):
                 estado_migracion.append("AFP: " + afp_estado)
                 afp_canon = "No Aplica"
@@ -489,24 +550,24 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                 else:
                     tasa = tasas_conocidas.get(afp_canon, -1)
 
-            resol_raw = get_by_any(headers, row, "Resolución Médica", "Resolucion Medica")
+            resol_raw = row[ix["resol"]] if ix["resol"] is not None else None
             resol_canon, resol_estado = clasificar_resolucion(resol_raw, RESOLUCION_MEDICA_CANON)
-            if resol_canon is None:
+            if resol_canon is None and ix["estado"] is not None:
                 resol_canon, resol_estado = clasificar_resolucion(
-                    get_by_any(headers, row, "Estado"), RESOLUCION_MEDICA_CANON)
+                    row[ix["estado"]], RESOLUCION_MEDICA_CANON)
             if resol_estado not in ("OK", "Vacio") and not str(resol_estado).startswith("LEGACY"):
                 estado_migracion.append("Resolucion Medica: " + resol_estado)
 
             # ── Extraer ambos bloques de montos ──
             montos = extraer_montos_dobles(headers, row)
 
-                        # ── Deduplicación: mismo evento de licencia en fuentes distintas ──
+            # ── Deduplicación: mismo evento de licencia en fuentes distintas ──
             # Si un folio aparece en varias hojas, quedarse con la fuente de mayor año.
             # La clave usa RUT + Folio + Fecha Inicio (no incluye Fecha Término ni Fuente).
-            folio = get_by_any(headers, row, "Folio licencia", "Folio Minsal")
-            fecha_ini = get_by_any(headers, row, "Fecha Inicio", "Fech. Inicio")
-            fecha_ter = get_by_any(headers, row, "Fecha Termino", "Fech. Termino")
-            
+            folio = row[ix["folio"]] if ix["folio"] is not None else None
+            fecha_ini = row[ix["fecha_ini"]] if ix["fecha_ini"] is not None else None
+            fecha_ter = row[ix["fecha_ter"]] if ix["fecha_ter"] is not None else None
+
             dedup_key = (
                 str(rut or ""),
                 str(folio or ""),
@@ -514,7 +575,7 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
             )
             m_anio = re.search(r'(\d{4})', name)
             anio_fuente = int(m_anio.group(1)) if m_anio else 0
-            
+
             if dedup_key in vistos and anio_fuente <= vistos[dedup_key]:
                 continue  # ya existe registro de fuente igual o más reciente
             vistos[dedup_key] = anio_fuente
@@ -527,12 +588,12 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                 "rut": rut or (norm_rut(rut_raw) or ""),
                 "nombre": func["nombre"] if func else (nombre_raw or ""),
                 "fecha_nacimiento": func["fecha_nacimiento"] if func else None,
-                "sexo": func["sexo"] if func else get_by_any(headers, row, "Sexo"),
+                "sexo": func["sexo"] if func else (row[ix["sexo"]] if ix["sexo"] is not None else None),
                 "establecimiento": estab_canon,
                 "folio_licencia": folio,
                 "fecha_inicio": fecha_ini,
                 "fecha_termino": fecha_ter,
-                "dias_lm": get_by_any(headers, row, "Días LM", "Días Lic"),
+                "dias_lm": row[ix["dias_lm"]] if ix["dias_lm"] is not None else None,
                 "tipo_licencia": tipo_canon,
                 "institucion_salud": inst_canon,
                 "afp": afp_canon or "No Aplica",
@@ -541,8 +602,8 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                 **montos,
                 "observaciones": " | ".join(
                     str(x) for x in [
-                        get_by_any(headers, row, "Observaciones"),
-                        get_by_any(headers, row, "Observaciones 2"),
+                        row[ix["obs1"]] if ix["obs1"] is not None else None,
+                        row[ix["obs2"]] if ix["obs2"] is not None else None,
                     ] if x
                 ),
                 "origen": name,
@@ -574,11 +635,22 @@ def migrar_descuentos(hojas_hechos):
         if not desc_cols:
             continue
 
-        # 2) Recorrer filas y extraer valores no nulos / != 0
-        for r in range(hrow + 1, ws.max_row + 1):
-            row = [ws.cell(r, i + 1).value for i in range(len(headers))]
-            rut_raw = get_by_any(headers, row, "Rut")
-            folio = get_by_any(headers, row, "Folio licencia", "Folio Minsal")
+        # 2) Precalcular índices de columnas fijas (evita get_by_any en cada fila)
+        def _find_col(*names):
+            for n in names:
+                try:
+                    return headers.index(n)
+                except ValueError:
+                    pass
+            return None
+
+        idx_rut   = _find_col("Rut")
+        idx_folio = _find_col("Folio licencia", "Folio Minsal")
+
+        # 3) Recorrer filas con iter_rows (mucho más rápido en WASM/Pyodide)
+        for row in ws.iter_rows(min_row=hrow + 1, values_only=True):
+            rut_raw = row[idx_rut] if idx_rut is not None else None
+            folio   = row[idx_folio] if idx_folio is not None else None
             rut = norm_rut(rut_raw) if rut_raw else ""
 
             # Si no hay ni RUT ni Folio, saltamos la fila
@@ -773,7 +845,7 @@ def escribir_hechos_descuentos(descuentos):
             ])
 
         _estilizar_header(ws, ncols)
-        ws.row_dimensions[1].height = None   # <-- AGREGA ESTO
+        ws.row_dimensions[1].height = None   # <-- FIX: igual que el resto de tablas
         for r in range(2, ws.max_row + 1):
             for c in range(1, ncols + 1):
                 cell = ws.cell(r, c)
@@ -790,7 +862,7 @@ def escribir_hechos_descuentos(descuentos):
         wb.active.title = "Hechos_Descuentos"
         wb.active.append(["Folio Licencia", "RUT", "Periodo", "Monto Descuento", "Fuente"])
         _estilizar_header(wb.active, 5)
-        wb.active.row_dimensions[1].height = None   # <-- Y ESTO
+        wb.active.row_dimensions[1].height = None   # <-- FIX: igual que el resto de tablas
 
     buf = io.BytesIO()
     wb.save(buf)
@@ -1025,24 +1097,96 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
 # PIPELINE (punto de entrada)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def procesar(src_bytes: bytes, dim_est_bytes: bytes) -> dict:
+def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None) -> dict:
     """Ejecuta el pipeline completo y devuelve un dict {nombre_archivo: bytes},
     incluyendo un 'SLEP_files.zip' con todo junto."""
+
+    def log(msg):
+        if log_callback:
+            log_callback(msg)
 
     funcionarios, _establecimientos_raw, hojas_hechos = leer_fuente(src_bytes)
     dim_establecimientos = leer_dim_establecimiento(dim_est_bytes)
 
+    # ── Logs iniciales ──
+    log("\n\nLeyendo planilla madre...")
+    log(f"  {len(funcionarios)} funcionarios en DATOS")
+    log(f"  {len(_establecimientos_raw)} establecimientos/unidades en catálogo inicial")
+
+    # ── Folios repetidos ──
+    folios = []
+    for name, ws, hrow, headers in hojas_hechos:
+        def _idx(*names):
+            for n in names:
+                if n in headers:
+                    return headers.index(n)
+            return None
+        idx_folio = _idx("Folio licencia", "Folio Minsal")
+        if idx_folio is None:
+            continue
+        for row in ws.iter_rows(min_row=hrow + 1, values_only=True):
+            folio = row[idx_folio]
+            if folio is not None and str(folio).strip():
+                folios.append(str(folio).strip())
+
+    folio_counts = Counter(folios)
+    repetidos = {f: c for f, c in folio_counts.items() if c > 1}
+    if repetidos:
+        total_rep = sum(repetidos.values())
+        log(f"  ▸ {len(repetidos)} folios repetidos ({total_rep} registros totales)")
+    else:
+        log("  ▸ 0 folios repetidos")
+    log("\n")
+
     catalogo_norm = {norm(e["establecimiento"]): e["establecimiento"] for e in dim_establecimientos}
     catalogo_patterns = RE_ESTABLECIMIENTO
 
-    tipo_canon, institucion_canon, resolucion_canon = generar_listas_canonicas(hojas_hechos, RE_TIPO, RE_INST)
+    (tipo_canon, tipo_clasif), (institucion_canon, institucion_clasif), (resolucion_canon, resolucion_clasif) = generar_listas_canonicas(hojas_hechos)
 
+    # ── Listas canónicas ──
+    log("Generando listas canónicas desde datos históricos...")
+    log("")
+    log("=== Tipo Licencia ===")
+    for canon in tipo_canon:
+        vals = tipo_clasif.get(canon, [])
+        if vals:
+            log(f"  '{canon}' <- {sorted(vals)}")
+    sin = tipo_clasif.get("_sin_clasificar", [])
+    if sin:
+        log(f"  SIN CLASIFICAR: {sorted(sin)}")
+    log("\n")
+
+    log("=== Institución Salud ===")
+    for canon in institucion_canon:
+        vals = institucion_clasif.get(canon, [])
+        if vals:
+            log(f"  '{canon}' <- {sorted(vals)}")
+    sin = institucion_clasif.get("_sin_clasificar", [])
+    if sin:
+        log(f"  SIN CLASIFICAR: {sorted(sin)}")
+    log("\n")
+
+    log("=== Resolución Médica ===")
+    for canon in resolucion_canon:
+        vals = resolucion_clasif.get(canon, [])
+        if vals:
+            log(f"  '{canon}' <- {sorted(vals)}")
+    sin = resolucion_clasif.get("_sin_clasificar", [])
+    if sin:
+        log(f"  SIN CLASIFICAR: {sorted(sin)}")
+    log("\n")
+
+    # ── Migración ──
+    log("Migrando hechos históricos...")
     hechos, nuevos_estab = migrar_hechos(
         hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
         tipo_canon, institucion_canon, resolucion_canon,
     )
 
-    # Extraer descuentos de todas las hojas LM
+    log(f"  {len(hechos)} filas de hechos migradas desde {len(hojas_hechos)} hojas")
+    if nuevos_estab:
+        log(f"  {len(nuevos_estab)} establecimientos que requieren revisión: {', '.join(nuevos_estab.keys())}")
+
     descuentos = migrar_descuentos(hojas_hechos)
 
     for ne in nuevos_estab:
@@ -1056,6 +1200,7 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes) -> dict:
         })
 
     dim_afp = construir_dim_afp(hojas_hechos)
+    log(f"  {len(dim_afp)} combinaciones AFP+Tasa detectadas")
 
     out = {
         "01_Dim_Funcionario.xlsx": escribir_dim_funcionario(funcionarios),
@@ -1067,6 +1212,9 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes) -> dict:
         ),
         "05_Hechos_Descuentos.xlsx": escribir_hechos_descuentos(descuentos),
     }
+
+    n_hechos = len(hechos)
+    log(f"04_Hechos_Licencias.xlsx generado con {n_hechos + 40} filas ({n_hechos} migradas + filas en blanco).")
 
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
