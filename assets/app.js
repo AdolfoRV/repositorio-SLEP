@@ -1,8 +1,7 @@
 // assets/app.js
-// Punto de entrada. Toda la lógica vive en assets/slep/*.js; este archivo
-// solo conecta esos módulos con los elementos del DOM definidos en el .qmd.
+// Punto de entrada. Conecta los módulos de lógica con los elementos del DOM.
 
-import { setupDrop } from "./slep/upload.js";
+import { setupDrop } from "./slep/ui.js";
 import { procesarArchivos } from "./slep/processor.js";
 
 export function initSlepApp() {
