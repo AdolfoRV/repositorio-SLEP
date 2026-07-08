@@ -1,30 +1,22 @@
 // assets/slep/processor.js
 // Orquesta el flujo completo: leer archivos, correr slep.procesar y descargar resultados.
 
-import { ESTABLECIMIENTOS_URL, XLSX_MIME, ZIP_MIME } from "./config.js";
-import { log, clearLog } from "./log.js";
-import { getPyodide } from "./pyodide-loader.js";
-import { descargarBlob } from "./download.js";
-import { files } from "./upload.js";
+import { log, clearLog, descargarBlob, files } from "./ui.js";
 
-async function cargarEstablecimientos() {
-  log("Cargando maestro de establecimientos...");
-  log("(URL: " + ESTABLECIMIENTOS_URL + ")");
-  const estRes = await fetch(ESTABLECIMIENTOS_URL);
-  if (!estRes.ok) {
-    throw new Error(
-      `No se pudo cargar el maestro de establecimientos (${ESTABLECIMIENTOS_URL}) — HTTP ${estRes.status}`
-    );
-  }
-  return estRes.arrayBuffer();
-}
+const WORKER_TIMEOUT_MS = 120000;
+const XLSX_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const ZIP_MIME = "application/zip";
 
 function descargarResultados(resultados) {
   for (const [nombre, data] of resultados) {
     if (nombre === "SLEP_files.zip") continue;
     descargarBlob(nombre, data, XLSX_MIME);
   }
-  descargarBlob("SLEP_files.zip", resultados.get("SLEP_files.zip"), ZIP_MIME);
+  const zipEntry = resultados.find(([n]) => n === "SLEP_files.zip");
+  if (zipEntry) {
+    descargarBlob("SLEP_files.zip", zipEntry[1], ZIP_MIME);
+  }
 }
 
 export async function procesarArchivos() {
@@ -38,33 +30,105 @@ export async function procesarArchivos() {
   downloadsPanel.style.display = "none";
   downloadList.innerHTML = "";
 
-  try {
-    const pyodide = await getPyodide();
+  let worker = null;
+  let timeoutId = null;
 
+  const cleanup = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (worker) {
+      worker.terminate();
+      worker = null;
+    }
+  };
+
+  try {
     log("Leyendo archivo de licencias...");
     const licenciasBuf = await files.licencias.arrayBuffer();
 
-    const estBuf = await cargarEstablecimientos();
+    log("Cargando maestro de establecimientos...");
+    const siteRoot = window.location.href.substring(
+      0,
+      window.location.href.lastIndexOf("/") + 1
+    );
+    const estUrl = new URL("assets/tables/establecimientos.xlsx", siteRoot).href;
+    const estRes = await fetch(estUrl);
+    if (!estRes.ok) {
+      throw new Error(
+        `No se pudo cargar el maestro de establecimientos (${estUrl}) — HTTP ${estRes.status}`
+      );
+    }
+    const estBuf = await estRes.arrayBuffer();
 
-    pyodide.globals.set("licencias_bytes", new Uint8Array(licenciasBuf));
-    pyodide.globals.set("establecimientos_bytes", new Uint8Array(estBuf));
+    log("Iniciando procesamiento en segundo plano...");
+    worker = new Worker("assets/slep/worker.js");
 
-    log("Procesando datos...");
-    pyodide.runPython(`
-resultados = slep.procesar(bytes(licencias_bytes), bytes(establecimientos_bytes))
-    `);
+    timeoutId = setTimeout(() => {
+      log("ERROR: El worker no respondió dentro del tiempo límite (2 min).", true);
+      btn.textContent = "Reintentar";
+      btn.disabled = false;
+      cleanup();
+    }, WORKER_TIMEOUT_MS);
 
-    const resultados = pyodide.globals.get("resultados").toJs();
-    descargarResultados(resultados);
+    worker.onmessage = (e) => {
+      const { type, msg, resultados } = e.data;
 
-    downloadsPanel.style.display = "block";
-    log("Listo! Descarga los archivos arriba.");
-    btn.textContent = "Procesar y descargar";
-    btn.disabled = false;
+      if (type === "ready") {
+        log("Worker listo.");
+        return;
+      }
+      if (type === "log") {
+        log(msg);
+        return;
+      }
+      if (type === "error") {
+        log("ERROR: " + msg, true);
+        console.error(msg);
+        btn.textContent = "Reintentar";
+        btn.disabled = false;
+        cleanup();
+        return;
+      }
+      if (type === "done") {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        descargarResultados(resultados);
+        downloadsPanel.style.display = "block";
+        btn.textContent = "Procesar y descargar";
+        btn.disabled = false;
+        cleanup();
+        return;
+      }
+    };
+
+    worker.onerror = (err) => {
+      log("ERROR del Worker: " + err.message, true);
+      console.error(err);
+      btn.textContent = "Reintentar";
+      btn.disabled = false;
+      cleanup();
+    };
+
+    worker.onmessageerror = (err) => {
+      log("ERROR de mensaje del Worker: " + err.message, true);
+      console.error(err);
+      btn.textContent = "Reintentar";
+      btn.disabled = false;
+      cleanup();
+    };
+
+    // Pasar configuración al worker para evitar duplicación
+    worker.postMessage({
+      licencias_bytes: new Uint8Array(licenciasBuf),
+      establecimientos_bytes: new Uint8Array(estBuf),
+      siteRoot,
+      slepModules: ["__init__.py", "constants.py", "utils.py", "core.py"],
+      pyodideIndexUrl: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/",
+    });
   } catch (e) {
     log("ERROR: " + e.message, true);
     console.error(e);
     btn.textContent = "Reintentar";
     btn.disabled = false;
+    cleanup();
   }
 }
