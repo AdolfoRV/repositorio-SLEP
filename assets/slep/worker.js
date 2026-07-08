@@ -23,6 +23,7 @@ self.onmessage = async function(e) {
   const {
     licencias_bytes,
     establecimientos_bytes,
+    pbit_url,
     siteRoot,
     slepModules,
     pyodideIndexUrl,
@@ -82,18 +83,32 @@ if "/home/pyodide" not in sys.path:
 import slep
     `);
 
+    self.postMessage({ type: "log", msg: "Descargando plantilla Power BI..." });
+    const pbitRes = await fetch(pbit_url);
+    if (!pbitRes.ok) {
+      throw new Error(
+        `No se pudo cargar la plantilla Power BI (${pbit_url}) — HTTP ${pbitRes.status}`
+      );
+    }
+    const pbitBuf = await pbitRes.arrayBuffer();
+
     self.postMessage({ type: "log", msg: "Procesando datos..." });
 
-    // ── Callback de log para Python ──
     pyodide.globals.set("slep_log", (msg) => {
       self.postMessage({ type: "log", msg: String(msg) });
     });
 
     pyodide.globals.set("licencias_bytes", licencias_bytes);
     pyodide.globals.set("establecimientos_bytes", establecimientos_bytes);
+    pyodide.globals.set("pbit_bytes", new Uint8Array(pbitBuf));
 
     pyodide.runPython(`
-resultados = slep.procesar(bytes(licencias_bytes), bytes(establecimientos_bytes), slep_log)
+resultados = slep.procesar(
+    bytes(licencias_bytes),
+    bytes(establecimientos_bytes),
+    slep_log,
+    pbit_data=bytes(pbit_bytes)
+)
 
 resultados_list = []
 for k, v in resultados.items():
@@ -121,7 +136,6 @@ for k, v in resultados.items():
       }
     }
 
-    // Ya no logueamos "Archivos generados: ..."
     self.postMessage({ type: "done", resultados });
   } catch (err) {
     self.postMessage({ type: "error", msg: safeErrorMsg(err) });

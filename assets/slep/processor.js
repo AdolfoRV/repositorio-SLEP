@@ -1,5 +1,4 @@
 // assets/slep/processor.js
-// Orquesta el flujo completo: leer archivos, correr slep.procesar y descargar resultados.
 
 import { log, clearLog, descargarBlob, files } from "./ui.js";
 
@@ -7,11 +6,13 @@ const WORKER_TIMEOUT_MS = 120000;
 const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const ZIP_MIME = "application/zip";
+const PBIT_MIME = "application/octet-stream";
 
 function descargarResultados(resultados) {
   for (const [nombre, data] of resultados) {
     if (nombre === "SLEP_files.zip") continue;
-    descargarBlob(nombre, data, XLSX_MIME);
+    const mime = nombre.endsWith(".pbit") ? PBIT_MIME : XLSX_MIME;
+    descargarBlob(nombre, data, mime);
   }
   const zipEntry = resultados.find(([n]) => n === "SLEP_files.zip");
   if (zipEntry) {
@@ -58,6 +59,9 @@ export async function procesarArchivos() {
       );
     }
     const estBuf = await estRes.arrayBuffer();
+
+    // URL del .pbit para que el worker lo descargue directamente
+    const pbitUrl = new URL("assets/Licencias_Medicas.pbit", siteRoot).href;
 
     log("Iniciando procesamiento en segundo plano...");
     worker = new Worker("assets/slep/worker.js");
@@ -116,10 +120,10 @@ export async function procesarArchivos() {
       cleanup();
     };
 
-    // Pasar configuración al worker para evitar duplicación
     worker.postMessage({
       licencias_bytes: new Uint8Array(licenciasBuf),
       establecimientos_bytes: new Uint8Array(estBuf),
+      pbit_url: pbitUrl,           // ← URL en vez de bytes
       siteRoot,
       slepModules: ["__init__.py", "constants.py", "utils.py", "core.py"],
       pyodideIndexUrl: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/",
