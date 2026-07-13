@@ -61,7 +61,7 @@ export async function procesarArchivos() {
     const estBuf = await estRes.arrayBuffer();
 
     // URL del .pbit para que el worker lo descargue directamente
-    const pbitUrl = new URL("assets/Licencias_Medicas.pbit", siteRoot).href;
+    const pbitUrl = new URL("assets/Dashboard_Licencias.pbit", siteRoot).href;
 
     log("Iniciando procesamiento en segundo plano...");
     worker = new Worker("assets/slep/worker.js");
