@@ -1213,7 +1213,7 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None, pbit_dat
         "05_Hechos_Descuentos.xlsx": escribir_hechos_descuentos(descuentos),
     }
     if pbit_data is not None:
-        out["Licencias_Medicas.pbit"] = pbit_data
+        out["Dashboard_Licencias.pbit"] = pbit_data
 
     n_hechos = len(hechos)
     log(f"04_Hechos_Licencias.xlsx generado con {n_hechos + 40} filas ({n_hechos} migradas + filas en blanco).")
