@@ -1,11 +1,45 @@
-"""Migrador SLEP - lógica consolidada en un solo archivo.
+"""Migrador SLEP - pipeline completo de procesamiento de licencias médicas.
 
-Importa únicamente constants y text_utils (que se mantienen sin cambios).
+Este módulo concentra la lógica de punta a punta del migrador. Las reglas de
+negocio declarativas (regex y mapas canónicos) viven en :mod:`slep.constants`
+y la normalización de bajo nivel en :mod:`slep.utils`; aquí se orquestan.
+
+Etapas del pipeline (ver :func:`procesar`):
+
+1. **Lectura** (:func:`leer_fuente`, :func:`leer_dim_establecimiento`):
+   carga la planilla madre (hoja ``DATOS`` de funcionarios, hojas ``LM*`` de
+   hechos) y la tabla maestra de establecimientos.
+2. **Clasificación / canonización** (:func:`clasificar_generico`,
+   :func:`clasificar_resolucion`, :func:`clasificar_afp`,
+   :func:`clasificar_establecimiento`): convierte el texto libre histórico a
+   los valores canónicos oficiales, marcando lo que requiere revisión.
+3. **Migración** (:func:`migrar_hechos`, :func:`migrar_descuentos`,
+   :func:`construir_dim_afp`): consolida los hechos deduplicados, extrae los
+   descuentos por período y deriva la dimensión de AFPs con sus tasas.
+4. **Escritura** (``escribir_*``): genera los cinco archivos del modelo
+   estrella (tres dimensiones + dos tablas de hechos) con formato,
+   validaciones de datos y fórmulas de autorrelleno para la imputación.
+
+Salidas (dict ``{nombre: bytes}`` devuelto por :func:`procesar`):
+    ``01_Dim_Funcionario.xlsx``, ``02_Dim_Establecimiento.xlsx``,
+    ``03_Dim_AFP.xlsx``, ``04_Hechos_Licencias.xlsx``,
+    ``05_Hechos_Descuentos.xlsx`` y ``SLEP_files.zip`` (más
+    ``Dashboard_Licencias.pbit`` si se entrega la plantilla).
+
+Los comentarios ``RB-*`` referencian el catálogo de reglas de negocio del
+documento técnico (``docs/Documento_Tecnico_Migrador_SLEP.md``).
 
 Uso:
     from slep.core import procesar
     resultados = procesar(licencias_bytes, establecimientos_bytes)
+
+Nota de despliegue:
+    El paquete está pensado para ejecutarse en el navegador bajo
+    Pyodide/WebAssembly (ver ``assets/worker.js``): opera sobre ``bytes`` en
+    memoria y evita cualquier acceso a disco o red.
 """
+
+from __future__ import annotations
 
 import io
 import re
@@ -24,18 +58,46 @@ from openpyxl.worksheet.table import Table
 from .constants import RE_TIPO, RE_INST, RE_RESOL, RE_ESTABLECIMIENTO, AFP_MAP, MESES_MAP
 from .utils import norm, norm_rut, _is_excel_error
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # CLASIFICADORES
-# ═══════════════════════════════════════════════════════════════════════════════
 
-def _match_canon(n, patterns):
+def _match_canon(n: str, patterns: dict):
+    """Busca el primer valor canónico cuyas regex coincidan con el texto.
+
+    Recorre ``patterns`` en orden de inserción (la primera coincidencia
+    gana), probando cada patrón con ``re.search`` (coincidencia parcial,
+    no anclada al string completo).
+
+    Args:
+        n: Texto **ya normalizado** con :func:`slep.utils.norm` (RB-01).
+        patterns: Dict ``{valor_canonico: [regex, ...]}`` de ``constants``.
+
+    Returns:
+        El valor canónico de la primera clave que coincide, o ``None`` si
+        ninguna lo hace.
+    """
     for canon, pats in patterns.items():
         if any(re.search(p, n) for p in pats):
             return canon
     return None
 
 
-def extraer_valores_unicos(hojas_hechos, *alt_names):
+def extraer_valores_unicos(hojas_hechos: list, *alt_names: str) -> list:
+    """Extrae los valores únicos no vacíos de una columna en todas las hojas de hechos.
+
+    Acepta varios nombres alternativos de columna (``alt_names``) y usa el
+    primero que exista en cada hoja, porque las hojas LM de distintos años
+    varían en tildes y nomenclatura (ej. "Institución Salud" /
+    "Institucion Salud").
+
+    Args:
+        hojas_hechos: Lista de tuplas ``(nombre_hoja, worksheet, fila_header,
+            headers)`` producida por :func:`leer_fuente`.
+        *alt_names: Nombres alternativos de la columna buscada.
+
+    Returns:
+        Lista ordenada alfabéticamente con los valores crudos únicos
+        (como ``str`` y sin espacios extremos).
+    """
     vals = set()
     for _, ws, hrow, headers in hojas_hechos:
         for n in alt_names:
@@ -50,7 +112,31 @@ def extraer_valores_unicos(hojas_hechos, *alt_names):
     return sorted(vals)
 
 
-def clasificar_generico(raw, canon_list, patterns, cutoff=0.6):
+def clasificar_generico(raw, canon_list: list, patterns: dict, cutoff: float = 0.6):
+    """Clasifica texto libre en cascada: regex -> fuzzy -> revisión (RB-04).
+
+    Estrategia de negocio:
+        1. Error de Excel -> vacío (RB-03).
+        2. Vacío -> vacío.
+        3. Coincidencia por regex sobre el texto normalizado -> ``"OK"``.
+        4. Sin regex: coincidencia difusa (:func:`difflib.get_close_matches`)
+           contra la lista canónica, con umbral ``cutoff`` ->
+           ``"Corregido (revisar)"``. Cubre errores ortográficos leves.
+        5. Sin nada: se conserva el valor crudo y se marca
+           ``"REVISAR: no reconocido"``.
+
+    Args:
+        raw: Valor crudo de la celda.
+        canon_list: Lista de valores canónicos admitidos.
+        patterns: Dict de regex de ``constants`` asociado a la dimensión.
+        cutoff: Umbral de similitud (0-1) para la corrección difusa.
+
+    Returns:
+        Tupla ``(valor_canonico, estado)``. ``valor_canonico`` es ``None``
+        cuando el dato es vacío/error; ``estado`` es uno de ``"OK"``,
+        ``"Vacio"``, ``"Vacio (error Excel)"``, ``"Corregido (revisar)"`` o
+        ``"REVISAR: no reconocido"``.
+    """
     if _is_excel_error(raw):
         return None, "Vacio (error Excel)"
     n = norm(raw)
@@ -66,7 +152,24 @@ def clasificar_generico(raw, canon_list, patterns, cutoff=0.6):
     return raw, "REVISAR: no reconocido"
 
 
-def clasificar_resolucion(raw, canon_list):
+def clasificar_resolucion(raw, canon_list: list):
+    """Clasifica la Resolución Médica con regla adicional para datos legacy (RB-05).
+
+    Igual que :func:`clasificar_generico` sobre el catálogo ``RE_RESOL``,
+    pero antes descarta el caso histórico en que la columna "Resolución
+    Médica" contiene el **número** de la resolución (ej. "12345678-9",
+    "1.234.567") en lugar del estado: esos valores no son un estado y se
+    reportan como legacy sin marcar inconsistencia.
+
+    Args:
+        raw: Valor crudo de la celda.
+        canon_list: Lista canónica de estados (claves de ``RE_RESOL``).
+
+    Returns:
+        Tupla ``(valor_canonico, estado)``; además de los estados de
+        :func:`clasificar_generico`, puede devolver
+        ``(None, "LEGACY: es un N de resolucion, no un estado")``.
+    """
     if _is_excel_error(raw):
         return None, "Vacio (error Excel)"
     n = norm(raw)
@@ -85,6 +188,26 @@ def clasificar_resolucion(raw, canon_list):
 
 
 def clasificar_afp(raw):
+    """Clasifica la AFP y extrae su tasa de cotización (RB-06 y RB-07).
+
+    La planilla madre registra la AFP como texto libre, frecuentemente con
+    la tasa entre paréntesis: ``"Habitat (11,27)"``, ``"provida"``, etc.
+    La regex ``^([^\\(]+?)\\s*(?:\\(([\\d.,]+)\\))?\\s*$`` separa el nombre
+    de la tasa opcional, admitiendo coma o punto decimal.
+
+    La canonización del nombre es por **igualdad exacta** sobre el texto
+    normalizado contra las claves de ``AFP_MAP``; si falla, se intenta
+    corrección difusa (cutoff 0.6).
+
+    Args:
+        raw: Valor crudo de la celda ``A.F.P.``.
+
+    Returns:
+        Tupla ``(afp_canonica, tasa, estado)`` donde ``tasa`` es ``float`` o
+        ``None`` si la celda no la traía; ``estado`` es ``"OK"``, ``"Vacio"``,
+        ``"Vacio (error Excel)"``, ``"Corregido (revisar)"`` o
+        ``"REVISAR: AFP no reconocida"``.
+    """
     if not raw or not str(raw).strip():
         return None, None, "Vacio"
     if _is_excel_error(raw):
@@ -109,7 +232,35 @@ def clasificar_afp(raw):
     return canon, tasa, estado
 
 
-def clasificar_establecimiento(raw, catalogo_norm, catalogo_patterns):
+def clasificar_establecimiento(raw, catalogo_norm: dict, catalogo_patterns: dict):
+    """Clasifica el establecimiento en cascada de 4 niveles (RB-08).
+
+    A diferencia de :func:`clasificar_generico`, aquí existe una **tabla
+    maestra oficial** (``Establecimientos.xlsx``), por lo que la cascada es:
+
+        1. **Exacto**: el texto normalizado coincide con un nombre del
+           catálogo maestro -> ``"OK"``.
+        2. **Regex**: coincide con un patrón de ``RE_ESTABLECIMIENTO``
+           (variantes ortográficas conocidas) -> ``"OK (regex)"``.
+        3. **Fuzzy**: similitud difusa con el catálogo, umbral alto (0.82,
+           más estricto que el genérico para no fusionar escuelas
+           parecidas) -> ``"Corregido (revisar)"``.
+        4. **Nuevo**: no existe en el maestro -> se conserva el crudo, se
+           marca ``"NUEVO: ..."`` y el pipeline lo agrega a
+           ``Dim_Establecimiento`` con tipo "Otro" para revisión.
+
+    Args:
+        raw: Valor crudo de la celda de establecimiento/unidad.
+        catalogo_norm: Dict ``{nombre_normalizado: nombre_canonico}`` del
+            maestro de establecimientos.
+        catalogo_patterns: Dict de regex (``RE_ESTABLECIMIENTO``).
+
+    Returns:
+        Tupla ``(establecimiento_canonico, estado)`` con estados ``"OK"``,
+        ``"OK (regex)"``, ``"Corregido (revisar)"``, ``"Vacio"``,
+        ``"Vacio (error Excel)"`` o ``"NUEVO: no esta en Dim_Establecimiento,
+        se agrega y debe revisarse"``.
+    """
     if _is_excel_error(raw):
         return None, "Vacio (error Excel)"
     n = norm(raw)
@@ -126,9 +277,26 @@ def clasificar_establecimiento(raw, catalogo_norm, catalogo_patterns):
     return raw, "NUEVO: no esta en Dim_Establecimiento, se agrega y debe revisarse"
 
 
-def generar_listas_canonicas(hojas_hechos):
-    """Genera las listas canónicas y el mapeo crudo→canónico para log.
-    Devuelve ((canon_list, clasif), ...) donde clasif es {canon: [valores_crudos]}."""
+def generar_listas_canonicas(hojas_hechos: list):
+    """Deriva las listas canónicas y el log de clasificación desde el histórico.
+
+    Recorre los valores crudos únicos de las tres dimensiones de texto libre
+    (Tipo de Licencia, Institución de Salud y Resolución Médica), los
+    clasifica y construye, para cada dimensión, la lista canónica ordenada
+    (las claves oficiales de ``constants``) más un mapa de auditoría
+    ``{canonico: [valores_crudos_que_mapearon]}`` que :func:`procesar`
+    vuelca al log. Lo que no clasifica queda bajo la clave
+    ``"_sin_clasificar"``.
+
+    Args:
+        hojas_hechos: Lista de tuplas ``(nombre, worksheet, fila_header,
+            headers)`` de :func:`leer_fuente`.
+
+    Returns:
+        Tupla de tres elementos ``(tipo, institucion, resolucion)``, cada uno
+        de la forma ``(lista_canonica, clasificacion)`` donde
+        ``clasificacion`` es ``{canonico: [crudos]}``.
+    """
 
     def _extraer(alt_names):
         vals = set()
@@ -186,20 +354,42 @@ def generar_listas_canonicas(hojas_hechos):
     return (tipo_canon, tipo_clasif), (inst_canon, inst_clasif), (resol_canon, resol_clasif)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # EXTRACTOR DE MONTOS DOBLES (Sistema / Pagado)
-# ═══════════════════════════════════════════════════════════════════════════════
 
-def extraer_montos_dobles(headers, row):
-    """
-    Extrae los dos bloques de montos (Sistema Dep/Netcore  vs  Pagado FONASA/ISAPRE)
-    adaptándose a la estructura de cada hoja (2024, 2025 o 2026).
+def extraer_montos_dobles(headers: list, row: tuple) -> dict:
+    """Extrae los dos bloques de montos (Sistema vs. Pagado) de una fila (RB-11).
 
-    Devuelve dict con:
-      monto_subsidio_sistema, monto_cotizacion_previsional_sistema,
-      monto_previsional_salud_sistema, total_sistema,
-      monto_subsidio_pagado, monto_cotizacion_previsional_pagado,
-      monto_previsional_salud_pagado, total_pagado
+    La planilla madre lleva **dos circuitos de montos en paralelo** para cada
+    licencia: el calculado por el sistema de remuneraciones (Dep/Netcore) y
+    el efectivamente pagado por FONASA/ISAPRE. La estructura de columnas
+    cambia según el año de la hoja:
+
+    * **Patrón 2024**: ambos bloques repiten los mismos encabezados
+      ("Monto de Subsidio", "Monto cotizacion previsional",
+      "Monto Previsional Salud", "Total"); se distingue el bloque por la
+      **primera o segunda ocurrencia** del encabezado.
+    * **Patrón 2025/2026**: el bloque Sistema usa columnas llamadas
+      exactamente ``AFP`` y ``SALUD`` (más "Monto de Subsidio" y "Total");
+      el bloque Pagado mantiene los nombres largos, y su total puede
+      llamarse "Total" o "Total Recuperado".
+
+    La discriminante es la presencia simultánea de columnas ``afp`` y
+    ``salud`` (en minúsculas, sin puntos) entre los encabezados.
+
+    Args:
+        headers: Encabezados de la hoja (valores crudos de la fila de
+            encabezado).
+        row: Tupla de valores de la fila de datos (misma longitud relativa
+            que ``headers``).
+
+    Returns:
+        Dict con las 8 claves ``monto_subsidio_sistema``,
+        ``monto_cotizacion_previsional_sistema``,
+        ``monto_previsional_salud_sistema``, ``total_sistema``,
+        ``monto_subsidio_pagado``, ``monto_cotizacion_previsional_pagado``,
+        ``monto_previsional_salud_pagado`` y ``total_pagado``. Cada valor es
+        ``float`` cuando la celda es numérica, el valor crudo si no se pudo
+        convertir, o ``None`` si la columna no existe o la celda está vacía.
     """
     h_norm = [str(h).strip().lower() if h else "" for h in headers]
 
@@ -232,7 +422,7 @@ def extraer_montos_dobles(headers, row):
     tiene_salud_monto = any(h == "salud" for h in h_norm)
 
     if tiene_afp_monto and tiene_salud_monto:
-        # ── Patrón 2025 / 2026 ──
+        # Patrón 2025 / 2026
         # Primer bloque (Sistema): Monto de Subsidio | AFP | AFC | SALUD | Total
         # Segundo bloque (Pagado): Monto de Subsidio | Monto cotizacion previsional | Monto Previsional Salud | Total / Total Recuperado
         idx_sub_sist = find_first("monto de subsidio")
@@ -257,7 +447,7 @@ def extraer_montos_dobles(headers, row):
             "total_pagado": val(idx_total_pag),
         }
     else:
-        # ── Patrón 2024 ──
+        # Patrón 2024
         # Primer bloque (Sistema): Monto de Subsidio | Monto cotizacion previsional | Monto Previsional Salud | Total
         # Segundo bloque (Pagado): idem, segunda ocurrencia
         idx_sub_sist = find_first("monto de subsidio")
@@ -282,13 +472,44 @@ def extraer_montos_dobles(headers, row):
         }
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # LECTORES
-# ═══════════════════════════════════════════════════════════════════════════════
 
-def leer_fuente(data_bytes):
-    """Lee la planilla de licencias: hoja DATOS (funcionarios), LM01-2024 (unidades)
-    y todas las hojas LM* (hechos de licencias médicas)."""
+def leer_fuente(data_bytes: bytes):
+    """Lee la planilla madre de licencias y devuelve sus tres insumos.
+
+    Estructura esperada del libro (RB-14, RB-16):
+
+    * Hoja ``DATOS``: un funcionario por fila; encabezados en la fila 1
+      (``RUN``, ``Nombre``, ``Centro de Costo``, etc.). Es la fuente de
+      ``Dim_Funcionario``.
+    * Hoja ``LM01-2024``: se reutiliza solo para capturar la columna
+      ``Unidad`` (encabezados en fila 2) como fuente adicional de
+      establecimientos crudos.
+    * Hojas ``LM*`` (excepto ``DATOS``): tablas de hechos de licencias. La
+      fila de encabezado se detecta entre las filas 1 y 2 buscando una
+      celda que contenga "rut" (RB-14).
+
+    Se abre con ``data_only=True``: se leen los valores calculados por
+    Excel, no las fórmulas (RB-16). Las fórmulas rotas llegan como errores
+    cacheados y se tratan como vacío aguas arriba (RB-03).
+
+    Args:
+        data_bytes: Contenido binario del ``.xlsx`` de la planilla madre.
+
+    Returns:
+        Tupla ``(funcionarios, establecimientos_raw, hojas_hechos)``:
+
+        * ``funcionarios``: dict ``{rut: {...}}`` con los datos personales y
+          el ``establecimiento`` (Centro de Costo) crudo de cada uno.
+        * ``establecimientos_raw``: lista ordenada de nombres crudos de
+          establecimiento/unidad observados.
+        * ``hojas_hechos``: lista de tuplas ``(nombre_hoja, worksheet,
+          fila_header, headers)`` para cada hoja de hechos.
+
+    Raises:
+        KeyError: Si el libro no contiene las hojas obligatorias ``DATOS``
+            o ``LM01-2024``.
+    """
     wb = openpyxl.load_workbook(io.BytesIO(data_bytes), data_only=True)
     datos = wb["DATOS"]
     h = [c.value for c in datos[1]]
@@ -301,6 +522,7 @@ def leer_fuente(data_bytes):
     for row in datos.iter_rows(min_row=2, values_only=True):
         rut = norm_rut(row[c.get("RUN")])
         if not rut:
+            # RB-15: filas sin RUT válido no constituyen funcionario.
             continue
         cc = (row[c.get("Centro de Costo")] or "").strip() or None
         if cc:
@@ -344,8 +566,24 @@ def leer_fuente(data_bytes):
     return funcionarios, sorted(establecimientos_raw), hojas_hechos
 
 
-def leer_dim_establecimiento(data_bytes):
-    """Lee el archivo maestro Establecimientos.xlsx."""
+def leer_dim_establecimiento(data_bytes: bytes) -> list:
+    """Lee la tabla maestra ``Establecimientos.xlsx``.
+
+    La fila de encabezado se detecta dentro de las primeras 4 filas
+    buscando la celda "Tipo". Se esperan (todas opcionales salvo el
+    nombre) las columnas: ``Tipo``, ``Nombre establecimiento``, ``Comuna``,
+    ``Dirección``, ``Telefono`` y ``Sitio web``.
+
+    Los nombres duplicados se descartan conservando la primera aparición.
+
+    Args:
+        data_bytes: Contenido binario del ``.xlsx`` maestro.
+
+    Returns:
+        Lista de dicts ``{"tipo", "establecimiento", "comuna", "direccion",
+        "telefono", "sitio_web"}``, sin duplicados por nombre. Lista vacía
+        si no se encontró la fila de encabezado.
+    """
     wb = openpyxl.load_workbook(io.BytesIO(data_bytes), data_only=True)
     ws = wb.active
     header_row = 1
@@ -386,11 +624,33 @@ def leer_dim_establecimiento(data_bytes):
     return establecimientos
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # TRANSFORMACIÓN
-# ═══════════════════════════════════════════════════════════════════════════════
 
-def construir_dim_afp(hojas_hechos):
+def construir_dim_afp(hojas_hechos: list) -> list:
+    """Construye la dimensión de AFPs con sus tasas a partir del histórico.
+
+    Reglas de negocio (RB-07):
+
+    * Solo entran las AFPs canónicas válidas (valores de ``AFP_MAP`` más el
+      literal ``"No Aplica"``); los valores no reconocidos se ignoran aquí
+      (ya fueron marcados en la migración de hechos).
+    * Si una AFP aparece a veces con tasa explícita y a veces sin ella, las
+      filas sin tasa heredan la **tasa conocida** de esa AFP observada en
+      cualquier hoja.
+    * Si jamás se observó tasa para una AFP, se registra con tasa ``-1``
+      como señal de "dato faltante a completar".
+    * Se fuerzan dos registros fijos: ``("No Aplica", 0)`` y
+      ``("Pensionado (no aplica AFP)", 0)``, para que las validaciones de la
+      planilla de hechos siempre tengan esas opciones disponibles.
+
+    Args:
+        hojas_hechos: Lista de tuplas ``(nombre, worksheet, fila_header,
+            headers)`` de :func:`leer_fuente`.
+
+    Returns:
+        Lista de dicts ``{"afp": str, "tasa": float}``, una por combinación
+        AFP+tasa observada, ordenada por AFP y tasa descendente.
+    """
     # AFPs canónicas válidas: las del mapa + No Aplica
     afps_validas = set(AFP_MAP.values()) | {"No Aplica"}
 
@@ -427,8 +687,58 @@ def construir_dim_afp(hojas_hechos):
     return [{"afp": k[0], "tasa": k[1]} for k, _ in sorted(vistos.items(), key=lambda x: (x[0][0], -x[0][1]))]
 
 
-def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
-                   TIPO_LICENCIA_CANON, INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON):
+def migrar_hechos(hojas_hechos: list, funcionarios: dict, catalogo_norm: dict, catalogo_patterns: dict,
+                   TIPO_LICENCIA_CANON: list, INSTITUCION_SALUD_CANON: list, RESOLUCION_MEDICA_CANON: list):
+    """Migra y consolida las filas de todas las hojas LM en hechos únicos.
+
+    Es el corazón del pipeline. Por cada fila de cada hoja de hechos:
+
+    1. **Identificación del funcionario** (RB-09): primero por RUT
+       normalizado; si no aparece, por coincidencia difusa de nombre
+       (cutoff 0.85); si aún no, se crea un *placeholder* en
+       ``Dim_Funcionario`` para no dejar RUTs huérfanos y se marca la
+       inconsistencia.
+    2. **Canonización de dimensiones** (RB-04 a RB-08): establecimiento
+       (con *fallback* al Centro de Costo del funcionario cuando la fila no
+       lo trae), tipo de licencia, institución de salud, AFP+tasa
+       (RB-06/RB-07) y resolución médica (con *fallback* a la columna
+       "Estado" si la de resolución está vacía).
+    3. **Montos dobles** (RB-11): :func:`extraer_montos_dobles`.
+    4. **Validaciones**: fecha de término anterior a la de inicio se marca
+       como inconsistencia, pero la fila se conserva (RB-13).
+    5. **Deduplicación entre hojas** (RB-10): la clave es
+       ``(RUT, Folio, Fecha Inicio)``; si el mismo evento aparece en varias
+       hojas, gana la fuente de **mayor año** (extraído del nombre de la
+       hoja, ej. ``LM03-2025`` -> 2025).
+
+    Toda inconsistencia detectada se acumula en el campo
+    ``estado_migracion`` (``"OK"`` si no hubo ninguna), que termina en la
+    columna "Detalle inconsistencia" del archivo de salida.
+
+    Filas sin RUT **ni** folio se descartan (RB-15).
+
+    Args:
+        hojas_hechos: Hojas de hechos de :func:`leer_fuente`.
+        funcionarios: Dict ``{rut: {...}}`` de :func:`leer_fuente`. Se
+            **muta**: los placeholders de funcionarios no encontrados se
+            agregan aquí para que aparezcan en ``Dim_Funcionario``.
+        catalogo_norm: ``{nombre_normalizado: nombre_canonico}`` del
+            maestro de establecimientos.
+        catalogo_patterns: Regex de establecimientos (``RE_ESTABLECIMIENTO``).
+        TIPO_LICENCIA_CANON: Lista canónica de tipos de licencia.
+        INSTITUCION_SALUD_CANON: Lista canónica de instituciones.
+        RESOLUCION_MEDICA_CANON: Lista canónica de estados de resolución.
+
+    Returns:
+        Tupla ``(hechos, nuevos_establecimientos)``:
+
+        * ``hechos``: lista de dicts de hechos deduplicados, con los campos
+          de la tabla ``Hechos_Licencias`` (incluye los 8 montos, ``origen``
+          con el nombre de la hoja fuente y ``estado_migracion``).
+        * ``nuevos_establecimientos``: dict ``{nombre_crudo: True}`` con los
+          establecimientos no presentes en el maestro (se agregan a
+          ``Dim_Establecimiento`` como tipo "Otro").
+    """
     nuevos_establecimientos = {}
     salida = {}     # dedup_key -> registro (quedarse con la fuente más reciente)
     vistos = {}     # dedup_key -> año de la fuente
@@ -488,7 +798,7 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                     rut = nombres_idx[cand[0]]
                     func = funcionarios.get(rut)
 
-            # FIX: crear placeholder en Dim_Funcionario para evitar RUTs huérfanos
+            # Crear placeholder en Dim_Funcionario para evitar RUTs huérfanos
             if func is None:
                 estado_migracion.append("RUT/Nombre no encontrado en Dim_Funcionario")
                 if rut and rut not in funcionarios:
@@ -509,7 +819,7 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
                     }
                 func = funcionarios.get(rut)
 
-            # ── Establecimiento: buscar en múltiples columnas posibles ──
+            # Establecimiento: buscar en múltiples columnas posibles
             estab_raw = row[ix["estab"]] if ix["estab"] is not None else None
             estab_canon = None
             if estab_raw:
@@ -558,10 +868,10 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
             if resol_estado not in ("OK", "Vacio") and not str(resol_estado).startswith("LEGACY"):
                 estado_migracion.append("Resolucion Medica: " + resol_estado)
 
-            # ── Extraer ambos bloques de montos ──
+            # Extraer ambos bloques de montos
             montos = extraer_montos_dobles(headers, row)
 
-            # ── Deduplicación: mismo evento de licencia en fuentes distintas ──
+            # Deduplicación: mismo evento de licencia en fuentes distintas
             # Si un folio aparece en varias hojas, quedarse con la fuente de mayor año.
             # La clave usa RUT + Folio + Fecha Inicio (no incluye Fecha Término ni Fuente).
             folio = row[ix["folio"]] if ix["folio"] is not None else None
@@ -613,9 +923,29 @@ def migrar_hechos(hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
     return list(salida.values()), nuevos_establecimientos
 
 
-def migrar_descuentos(hojas_hechos):
-    """Extrae las columnas 'MONTO DESCONTADO MES AÑO' de todas las hojas LM
-    y devuelve una lista de diccionarios para Hechos_Descuentos."""
+def migrar_descuentos(hojas_hechos: list) -> list:
+    """Extrae los descuentos por período de todas las hojas LM (RB-12).
+
+    Las hojas de hechos llevan los descuentos en formato **ancho**: una
+    columna por mes con encabezado ``MONTO DESCONTADO <MES> <AÑO>`` (ej.
+    "MONTO DESCONTADO MARZO 2025"). Esta función los pivotea a formato
+    **largo**: una fila por (folio, RUT, período) con su monto.
+
+    Reglas de negocio:
+
+    * El período se normaliza a ``YYYY-MM`` usando ``MESES_MAP``.
+    * Solo se emiten montos **distintos de cero** (las celdas vacías o en 0
+      no generan registro).
+    * Filas sin RUT ni folio se omiten (RB-15).
+    * Valores no numéricos se ignoran silenciosamente.
+
+    Args:
+        hojas_hechos: Hojas de hechos de :func:`leer_fuente`.
+
+    Returns:
+        Lista de dicts ``{"folio_licencia", "rut", "periodo",
+        "monto_descuento", "origen"}`` para la tabla ``Hechos_Descuentos``.
+    """
     descuentos = []
     re_desc = re.compile(r"MONTO\s+DESCONTADO\s+(\w+)\s+(\d{4})", re.IGNORECASE)
 
@@ -677,10 +1007,11 @@ def migrar_descuentos(hojas_hechos):
     return descuentos
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # WRITERS
-# ═══════════════════════════════════════════════════════════════════════════════
 
+# Estilos compartidos por todas las salidas: fuente base 9pt, encabezado
+# azul corporativo con texto blanco, bordes finos grises y congelación de la
+# fila de títulos (ver _estilizar_header).
 FONT = Font(name="Calibri", size=9)
 HEADER_FONT = Font(name="Calibri", bold=True, color="FFFFFF", size=9)
 HEADER_FILL = PatternFill("solid", start_color="1F4E78")
@@ -688,7 +1019,12 @@ THIN = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
 
-def _estilizar_header(ws, ncols):
+def _estilizar_header(ws, ncols: int) -> None:
+    """Aplica el estilo corporativo a la fila de encabezado y la congela.
+
+    Fuente blanca en negrita sobre azul ``1F4E78``, texto centrado con
+    ajuste, bordes, alto de fila 30 y paneles congelados en la fila 2.
+    """
     for c in range(1, ncols + 1):
         cell = ws.cell(1, c)
         cell.font = HEADER_FONT
@@ -699,7 +1035,19 @@ def _estilizar_header(ws, ncols):
     ws.row_dimensions[1].height = 30
 
 
-def _autoancho(ws, max_w=30):
+def _autoancho(ws, max_w: int = 30) -> None:
+    """Ajusta el ancho de cada columna a su contenido visible estimado.
+
+    Calcula el largo "renderizado" de cada celda considerando su formato
+    numérico (fechas como ``DD-MM-YYYY``, miles con separador, porcentajes,
+    signos de moneda y negativos entre paréntesis) y fija el ancho al máximo
+    encontrado + 2, acotado a ``max_w``. Las fórmulas (cadenas que empiezan
+    con ``=``) no se miden.
+
+    Args:
+        ws: Hoja de cálculo a ajustar.
+        max_w: Ancho máximo permitido por columna (30 por defecto).
+    """
     def _clean(s):
         if not s:
             return ""
@@ -748,7 +1096,24 @@ def _autoancho(ws, max_w=30):
         ws.column_dimensions[get_column_letter(c)].width = min(l + 2, max_w)
 
 
-def _escribir_dim(title, headers, rows, num_fmt=None):
+def _escribir_dim(title: str, headers: list, rows: list, num_fmt: dict = None) -> bytes:
+    """Escribe un archivo de dimensión completo (libro de una sola hoja).
+
+    Genera la hoja con encabezado estilizado, bordes y fuente base en todas
+    las celdas, formatos numéricos por columna (``num_fmt``: dict
+    ``{nro_columna: formato}``, 1-indexado), autoancho y una **tabla de
+    Excel** nativa (filtros y referencias estructuradas para Power BI).
+
+    Args:
+        title: Nombre de la hoja (se reutiliza, sin espacios, como nombre de
+            la tabla de Excel).
+        headers: Encabezados de columna.
+        rows: Filas de datos.
+        num_fmt: Formatos numéricos opcionales por columna.
+
+    Returns:
+        Contenido binario del ``.xlsx`` generado.
+    """
     wb = Workbook()
     ws = wb.active
     ws.title = title
@@ -772,7 +1137,17 @@ def _escribir_dim(title, headers, rows, num_fmt=None):
     return buf.read()
 
 
-def _add_ref(wb, name, headers, rows):
+def _add_ref(wb: Workbook, name: str, headers: list, rows: list) -> int:
+    """Agrega una hoja de referencia **oculta** para las fórmulas.
+
+    Las hojas ``ref_*`` son copias internas de las dimensiones que alimentan
+    las fórmulas ``INDEX/MATCH`` y las listas de validación de
+    ``Hechos_Licencias``; no se editan a mano, se regeneran.
+
+    Returns:
+        Número de filas escritas (incluido el encabezado), usado para acotar
+        los rangos de las fórmulas.
+    """
     ws = wb.create_sheet(name)
     ws.append(headers)
     for r in rows:
@@ -781,7 +1156,18 @@ def _add_ref(wb, name, headers, rows):
     return ws.max_row
 
 
-def _add_dv(ws, col, formula, n_rows, title="Valor no valido", msg="Debe seleccionar un elemento de la lista."):
+def _add_dv(ws, col: int, formula: str, n_rows: int, title: str = "Valor no valido",
+            msg: str = "Debe seleccionar un elemento de la lista.") -> None:
+    """Agrega una validación de datos tipo lista desplegable a una columna.
+
+    Args:
+        ws: Hoja destino.
+        col: Índice de columna (1-indexado).
+        formula: Fórmula del rango de la lista (ej. ``"=ref_Listas!$A$2:$A$10"``).
+        n_rows: Cantidad de filas a validar desde la fila 2.
+        title: Título del cuadro de error.
+        msg: Mensaje de error cuando el valor no pertenece a la lista.
+    """
     dv = DataValidation(type="list", formula1=formula, allow_blank=True, showErrorMessage=True, showInputMessage=True)
     dv.error, dv.errorTitle = msg, title
     dv.prompt, dv.promptTitle = "Seleccione un valor de la lista desplegable", "Lista de valores"
@@ -790,7 +1176,13 @@ def _add_dv(ws, col, formula, n_rows, title="Valor no valido", msg="Debe selecci
     ws.add_data_validation(dv)
 
 
-def escribir_dim_funcionario(funcionarios):
+def escribir_dim_funcionario(funcionarios: dict) -> bytes:
+    """Genera ``01_Dim_Funcionario.xlsx``, ordenado por nombre.
+
+    Columnas: RUT, Nombre, Fecha Nacimiento (formato ``DD-MM-YYYY``), Sexo,
+    Estado Civil, Direccion, Comuna, Telefono, Telefono Emergencia,
+    Nacionalidad, Formacion Profesional, Cargo y Establecimiento.
+    """
     rows = [
         [f["rut"], f["nombre"], f["fecha_nacimiento"], f["sexo"], f["estado_civil"],
          f["direccion"], f["comuna"], f["telefono"], f["telefono_emergencia"],
@@ -805,7 +1197,11 @@ def escribir_dim_funcionario(funcionarios):
     )
 
 
-def escribir_dim_establecimiento(establecimientos):
+def escribir_dim_establecimiento(establecimientos: list) -> bytes:
+    """Genera ``02_Dim_Establecimiento.xlsx``, ordenado y deduplicado por nombre.
+
+    Columnas: Establecimiento, Tipo, Comuna, Direccion, Telefono, Sitio Web.
+    """
     # Deduplicar por nombre
     vistos = set()
     unicos = []
@@ -820,12 +1216,19 @@ def escribir_dim_establecimiento(establecimientos):
     return _escribir_dim("Establecimiento", ["Establecimiento", "Tipo", "Comuna", "Direccion", "Telefono", "Sitio Web"], rows)
 
 
-def escribir_dim_afp(afp_filas):
+def escribir_dim_afp(afp_filas: list) -> bytes:
+    """Genera ``03_Dim_AFP.xlsx`` (columnas AFP y Tasa, formato ``0.00``)."""
     rows = [[f["afp"], f["tasa"]] for f in afp_filas]
     return _escribir_dim("AFP", ["AFP", "Tasa"], rows, num_fmt={2: "0.00"})
 
 
-def escribir_hechos_descuentos(descuentos):
+def escribir_hechos_descuentos(descuentos: list) -> bytes:
+    """Genera ``05_Hechos_Descuentos.xlsx`` (tabla de hechos en formato largo).
+
+    Columnas: Folio Licencia, RUT, Periodo (``YYYY-MM``, RB-12), Monto
+    Descuento (formato ``#,##0``) y Fuente (hoja de origen). Si no hay
+    descuentos, el archivo se emite igual, solo con el encabezado.
+    """
     wb = Workbook()
     if descuentos:
         wb.remove(wb.active)
@@ -845,7 +1248,7 @@ def escribir_hechos_descuentos(descuentos):
             ])
 
         _estilizar_header(ws, ncols)
-        ws.row_dimensions[1].height = None   # <-- FIX: igual que el resto de tablas
+        ws.row_dimensions[1].height = None  
         for r in range(2, ws.max_row + 1):
             for c in range(1, ncols + 1):
                 cell = ws.cell(r, c)
@@ -862,7 +1265,7 @@ def escribir_hechos_descuentos(descuentos):
         wb.active.title = "Hechos_Descuentos"
         wb.active.append(["Folio Licencia", "RUT", "Periodo", "Monto Descuento", "Fuente"])
         _estilizar_header(wb.active, 5)
-        wb.active.row_dimensions[1].height = None   # <-- FIX: igual que el resto de tablas
+        wb.active.row_dimensions[1].height = None
 
     buf = io.BytesIO()
     wb.save(buf)
@@ -870,13 +1273,55 @@ def escribir_hechos_descuentos(descuentos):
     return buf.read()
 
 
-def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
-                    INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON, descuentos=None):
+def escribir_hechos(funcionarios: dict, afp_filas: list, hechos: list, TIPO_LICENCIA_CANON: list,
+                    INSTITUCION_SALUD_CANON: list, RESOLUCION_MEDICA_CANON: list, descuentos: list = None) -> bytes:
+    """Genera ``04_Hechos_Licencias.xlsx``: la planilla madre nueva.
+
+    Libro con tres tipos de hojas:
+
+    * ``Instrucciones``: guía de uso para quien imputa datos.
+    * ``Hechos_Licencias`` (visible): tabla principal con los hechos
+      migrados **más 40 filas en blanco** para nuevas licencias.
+    * ``ref_Funcionario``, ``ref_AFP``, ``ref_Listas`` y ``ref_Descuentos``
+      (ocultas): copias internas que alimentan fórmulas y validaciones.
+
+    Mecánicas de autorrelleno para las filas nuevas:
+
+    * ``Nombre``, ``Fecha Nacimiento`` y ``Sexo`` se calculan con
+      ``INDEX/MATCH`` desde ``ref_Funcionario`` a partir del RUT. El
+      ``Establecimiento``, en cambio, se escribe como valor directo del
+      hecho migrado (decisión de diseño: el centro de costo del funcionario
+      puede cambiar en el tiempo y el hecho debe conservar el suyo).
+    * ``Tasa AFP``: valor histórico directo en filas migradas; fórmula
+      ``INDEX/MATCH`` sobre ``ref_AFP`` en filas nuevas.
+    * ``Aplica Descuentos``: fórmula con ``COUNTIF`` + ``HYPERLINK`` que
+      enlaza al archivo ``05_Hechos_Descuentos.xlsx`` cuando el folio tiene
+      descuentos asociados.
+    * Validaciones: listas desplegables para Tipo Licencia, Institución
+      Salud, Resolución Médica y A.F.P. (sobre ``ref_Listas``), validación
+      de RUT contra ``ref_Funcionario`` y validación de fechas entre
+      01-01-2020 y 31-12-2100 (seriales 43831 y 73415).
+
+    El encabezado usa un código de colores por bloque semántico: verde
+    (funcionario), azul (licencia), rojo (montos Sistema), fucsia (montos
+    Pagado) y naranjo (observaciones/trazabilidad).
+
+    Args:
+        funcionarios: Dict ``{rut: {...}}`` (incluye placeholders).
+        afp_filas: Filas de ``Dim_AFP`` (``{"afp", "tasa"}``).
+        hechos: Hechos migrados de :func:`migrar_hechos`.
+        TIPO_LICENCIA_CANON, INSTITUCION_SALUD_CANON, RESOLUCION_MEDICA_CANON:
+            Listas canónicas para las validaciones desplegables.
+        descuentos: Descuentos de :func:`migrar_descuentos` (opcional).
+
+    Returns:
+        Contenido binario del ``.xlsx`` generado.
+    """
     wb = Workbook()
     hoja = wb.active
     hoja.title = "Hechos_Licencias"
 
-    # ── refs ocultas (igual que antes) ──
+    # refs ocultas (igual que antes)
     func_rows = [
         [f["rut"], f["nombre"], f["fecha_nacimiento"], f["sexo"], f["establecimiento"]]
         for f in sorted(funcionarios.values(), key=lambda x: x["nombre"])
@@ -903,7 +1348,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
     n_resol = 1 + len(RESOLUCION_MEDICA_CANON)
     n_afp_names = 1 + len(afp_filas) + 1
 
-    # ── NUEVO: ref_Descuentos (hoja oculta, igual patrón que ref_Funcionario) ──
+    # ref_Descuentos (hoja oculta, igual patrón que ref_Funcionario)
     n_desc = 0
     if descuentos:
         desc_rows = [
@@ -912,7 +1357,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
         ]
         n_desc = _add_ref(wb, "ref_Descuentos", ["Folio Licencia", "RUT", "Periodo", "Monto Descuento", "Fuente"], desc_rows)
 
-    # ── Headers de Hechos_Licencias (con 8 columnas de montos: 4 Sistema + 4 Pagado) ──
+    # Headers de Hechos_Licencias (con 8 columnas de montos: 4 Sistema + 4 Pagado)
     headers = [
         "Folio Licencia", "RUT", "Nombre", "Fecha Nacimiento", "Sexo", "Establecimiento",
         "Fecha Inicio", "Fecha Termino", "Dias LM", "Tipo Licencia", "Institucion Salud",
@@ -945,7 +1390,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
         hoja.cell(r, C["RUT"], rut_val)
         f_rut = f"{get_column_letter(C['RUT'])}{r}"
 
-        # FIX: Establecimiento se escribe DIRECTAMENTE desde el hecho, no como fórmula
+        # Establecimiento se escribe DIRECTAMENTE desde el hecho, no como fórmula
         # Solo Nombre, Fecha Nacimiento y Sexo usan fórmula INDEX/MATCH
         for col_name, ref_col in [("Nombre", "B"), ("Fecha Nacimiento", "C"), ("Sexo", "D")]:
             formula = (
@@ -985,7 +1430,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
         for col_monto in COLS_MONTO_SISTEMA + COLS_MONTO_PAGADO:
             hoja.cell(r, col_monto).number_format = "#,##0"
 
-        # ── NUEVO: fórmula Aplica Descuentos con HYPERLINK externo ──
+        # fórmula Aplica Descuentos con HYPERLINK externo
         if descuentos and n_desc > 0:
             folio_col = get_column_letter(C["Folio Licencia"])
             folio_cell = f"{folio_col}{r}"
@@ -998,7 +1443,7 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
         else:
             hoja.cell(r, C["Aplica Descuentos"], "No")
 
-        # FIX: Tasa AFP automática. Para filas históricas escribir el valor directo
+        # Tasa AFP automática. Para filas históricas escribir el valor directo
         # (dato histórico); para filas nuevas (blancas) dejar la fórmula INDEX/MATCH.
         if i < n_hist and h and h.get("tasa_afp") is not None:
             hoja.cell(r, C["Tasa AFP"], h["tasa_afp"])
@@ -1093,13 +1538,38 @@ def escribir_hechos(funcionarios, afp_filas, hechos, TIPO_LICENCIA_CANON,
     return buf.read()
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
 # PIPELINE (punto de entrada)
-# ═══════════════════════════════════════════════════════════════════════════════
 
 def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None, pbit_data: bytes = None) -> dict:
-    """Ejecuta el pipeline completo y devuelve un dict {nombre_archivo: bytes},
-    incluyendo un 'SLEP_files.zip' con todo junto."""
+    """Ejecuta el pipeline completo y devuelve todos los archivos generados.
+
+    Orquesta las cuatro etapas (lectura -> clasificación -> migración ->
+    escritura) y emite por ``log_callback`` un log legible para la interfaz
+    web: conteos de funcionarios y establecimientos, folios repetidos entre
+    hojas (advertencia temprana de la deduplicación RB-10), el detalle de la
+    clasificación canónica por dimensión (incluidos los valores
+    ``SIN CLASIFICAR``), el resumen de la migración y las AFP detectadas.
+
+    Args:
+        src_bytes: Contenido binario de la planilla madre de licencias.
+        dim_est_bytes: Contenido binario del maestro ``Establecimientos.xlsx``.
+        log_callback: Callable opcional ``(str) -> None`` que recibe cada
+            línea del log de progreso (la UI lo muestra en pantalla).
+        pbit_data: Contenido binario opcional de la plantilla Power BI
+            (``.pbit``) para incluirla en la salida.
+
+    Returns:
+        Dict ``{nombre_archivo: bytes}`` con:
+
+        * ``01_Dim_Funcionario.xlsx``
+        * ``02_Dim_Establecimiento.xlsx`` (incluye los establecimientos
+          NUEVOS detectados, con tipo "Otro")
+        * ``03_Dim_AFP.xlsx``
+        * ``04_Hechos_Licencias.xlsx`` (hechos migrados + 40 filas en blanco)
+        * ``05_Hechos_Descuentos.xlsx``
+        * ``Dashboard_Licencias.pbit`` (solo si se pasó ``pbit_data``)
+        * ``SLEP_files.zip`` con todo lo anterior comprimido
+    """
 
     def log(msg):
         if log_callback:
@@ -1108,12 +1578,12 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None, pbit_dat
     funcionarios, _establecimientos_raw, hojas_hechos = leer_fuente(src_bytes)
     dim_establecimientos = leer_dim_establecimiento(dim_est_bytes)
 
-    # ── Logs iniciales ──
+    # Logs iniciales 
     log("\n\nLeyendo planilla madre...")
     log(f"  {len(funcionarios)} funcionarios en DATOS")
     log(f"  {len(_establecimientos_raw)} establecimientos/unidades en catálogo inicial")
 
-    # ── Folios repetidos ──
+    # Folios repetidos
     folios = []
     for name, ws, hrow, headers in hojas_hechos:
         def _idx(*names):
@@ -1143,7 +1613,7 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None, pbit_dat
 
     (tipo_canon, tipo_clasif), (institucion_canon, institucion_clasif), (resolucion_canon, resolucion_clasif) = generar_listas_canonicas(hojas_hechos)
 
-    # ── Listas canónicas ──
+    # Listas canónicas
     log("Generando listas canónicas desde datos históricos...")
     log("")
     log("=== Tipo Licencia ===")
@@ -1176,7 +1646,7 @@ def procesar(src_bytes: bytes, dim_est_bytes: bytes, log_callback=None, pbit_dat
         log(f"  SIN CLASIFICAR: {sorted(sin)}")
     log("\n")
 
-    # ── Migración ──
+    # Migración
     log("Migrando hechos históricos...")
     hechos, nuevos_estab = migrar_hechos(
         hojas_hechos, funcionarios, catalogo_norm, catalogo_patterns,
