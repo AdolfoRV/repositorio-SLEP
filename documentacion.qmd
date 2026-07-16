@@ -1,0 +1,645 @@
+---
+title: "Documento Técnico"
+toc: true
+---
+
+**Servicio Local de Educación Pública Los Libertadores**
+
+| | |
+|---|---|
+| **Proyecto** | Automatización de Reportes de Licencias Médicas |
+| **Componente** | Paquete Python `slep` (migración y normalización de datos) |
+| **Audiencia** | Equipo de gestión de personas (negocio) y equipo técnico (TI) |
+| **Estado** | Vigente — corresponde a la versión documentada de `scripts/slep/` |
+| **Fecha** | Julio 2026 |
+
+---
+
+## Tabla de contenidos
+
+1. [Introducción](#1-introducción)
+2. [Arquitectura tecnológica](#2-arquitectura-tecnológica)
+3. [Estructura del código](#3-estructura-del-código)
+4. [El pipeline paso a paso](#4-el-pipeline-paso-a-paso)
+5. [Entradas esperadas](#5-entradas-esperadas)
+6. [Catálogo de reglas de negocio y estandarizaciones](#6-catálogo-de-reglas-de-negocio-y-estandarizaciones)
+7. [Salidas generadas](#7-salidas-generadas)
+8. [Modelo estrella y Power BI](#8-modelo-estrella-y-power-bi)
+9. [Guía de mantenimiento](#9-guía-de-mantenimiento)
+10. [Riesgos conocidos y limitaciones](#10-riesgos-conocidos-y-limitaciones)
+11. [Glosario](#11-glosario)
+12. [Anexo A — Catálogo completo de establecimientos](#anexo-a--catálogo-completo-de-establecimientos)
+13. [Anexo B — Convenciones de documentación del código](#anexo-b--convenciones-de-documentación-del-código)
+
+---
+
+## 1. Introducción
+
+### 1.1 Propósito de este documento
+
+Este documento explica, para el equipo del SLEP Los Libertadores, **cómo está implementada la herramienta de migración de licencias médicas**, qué arquitectura tecnológica utiliza y **qué reglas de negocio, expresiones regulares y estandarizaciones aplica** sobre los datos históricos. Busca que cualquier persona del equipo pueda entender qué hace la herramienta con sus datos, y que el equipo técnico pueda mantenerla.
+
+### 1.2 Contexto y problema
+
+El registro de licencias médicas se llevaba históricamente en una planilla Excel ("planilla madre"), con problemas típicos de escalabilidad y calidad de datos:
+
+- **Incoherencias**: datos redundantes y contradictorios entre hojas de distintos años.
+- **Errores de entrada**: múltiples variantes ortográficas para un mismo establecimiento, institución o tipo de licencia ("FONASA", "fonasa", "Fonasa "…).
+- **Procesos manuales**: reportar e imputar licencias exigía edición manual exhaustiva y propensa a errores.
+
+### 1.3 Qué hace la herramienta
+
+La herramienta funciona como un **procesador de datos inteligente**. Recibe la planilla madre histórica (desde 2024) más una tabla maestra de establecimientos, y devuelve un archivo ZIP con un **modelo de datos normalizado** (esquema estrella) de cinco archivos Excel:
+
+1. **Normaliza** automáticamente errores ortográficos y variantes de escritura.
+2. **Valida cruzadamente** la información entre tablas (funcionarios, establecimientos, AFPs) y reporta anomalías.
+3. **Genera reportes listos para usar**: planillas con alertas de inconsistencias, campos autorrellenados y listas desplegables para la imputación final, más un dashboard de Power BI.
+
+---
+
+## 2. Arquitectura tecnológica
+
+### 2.1 Vista general
+
+```{mermaid}
+flowchart LR
+    subgraph Navegador["Navegador del usuario (sitio Quarto)"]
+        UI["Interfaz web<br/>(index.qmd / migrador.qmd<br/>+ ui.js)"]
+        W["worker.js<br/>(Web Worker + Pyodide/WASM)"]
+    end
+    subgraph Paquete["Paquete Python 'slep'"]
+        C["core.py<br/>pipeline"]
+        K["constants.py<br/>reglas de negocio"]
+        U["utils.py<br/>normalización"]
+    end
+    IN1[("Planilla madre<br/>.xlsx")]
+    IN2[("Establecimientos<br/>.xlsx")]
+    OUT[("SLEP_files.zip<br/>5 xlsx + .pbit")]
+    PBI["Power BI<br/>Dashboard KPIs"]
+
+    IN1 --> UI
+    IN2 --> UI
+    UI --> W --> C
+    K --> C
+    U --> C
+    C --> W --> OUT
+    OUT --> PBI
+```
+
+### 2.2 Componentes
+
+| Componente | Tecnología | Rol |
+|---|---|---|
+| **Interfaz y documentación** | [Quarto](https://quarto.org/) (HTML/CSS/JS) | Sitio web del proyecto: página de inicio, documentación y pantalla del migrador (`migrador.qmd`) |
+| **Ejecución en el navegador** | JavaScript (`assets/ui.js`, `assets/worker.js`) + Pyodide | El Python corre **dentro del navegador** compilado a WebAssembly: los archivos no salen del computador del usuario, no se necesita servidor |
+| **Motor de procesamiento** | Python 3, paquete `slep` (`scripts/slep/`) | Toda la lógica de migración, normalización y generación de archivos. **Es el componente documentado aquí** |
+| **Almacenamiento** | Excel (`.xlsx`) | Única fuente de entrada y formato de salida; actúa como "base de datos" del proceso |
+| **Análisis** | Power BI (`.pbit`) | Dashboard de KPIs de licencias que consume los cinco archivos generados |
+
+**Decisiones de diseño relevantes (TI):**
+
+- **Sin servidor**: al correr en Pyodide/WASM, el procesamiento es 100 % local. Por eso el paquete opera sobre `bytes` en memoria (`io.BytesIO`) y no usa disco ni red.
+- **Excel como interfaz de datos**: en vez de imponer un sistema nuevo, la herramienta lee y escribe el formato que el equipo ya domina, con tablas nativas, validaciones y fórmulas de autorrelleno.
+- **Reglas declarativas separadas del código**: todas las expresiones regulares y catálogos viven en `constants.py`, de modo que ajustar una regla de negocio no requiere tocar la lógica.
+- **Rendimiento en WASM**: se usan patrones eficientes para Pyodide (`iter_rows`, precálculo de índices de columnas una sola vez por hoja, lectura con `data_only=True`).
+
+### 2.3 Flujo de datos
+
+1. El usuario carga en la web: **planilla madre** + **Establecimientos.xlsx** (y opcionalmente la plantilla `.pbit`).
+2. El *worker* invoca `slep.procesar(...)` y muestra en pantalla el **log** de clasificación e inconsistencias.
+3. El usuario descarga `SLEP_files.zip` con los cinco archivos normalizados (+ dashboard).
+4. Los archivos se usan como nueva planilla madre de imputación y como fuente del dashboard de Power BI.
+
+---
+
+## 3. Estructura del código
+
+El paquete `slep` tiene cuatro módulos con responsabilidades claramente separadas:
+
+| Archivo | Responsabilidad | ¿Qué contiene? |
+|---|---|---|
+| `__init__.py` | API pública | Expone una única función: `procesar(...)` |
+| `constants.py` | **Reglas de negocio declarativas** | Todas las expresiones regulares y mapas de canonización (tipos de licencia, instituciones, resoluciones, establecimientos, AFP, meses, errores de Excel) |
+| `utils.py` | Normalización de bajo nivel | `norm()` (texto), `norm_rut()` (RUT), detección de errores de Excel |
+| `core.py` | Pipeline completo | Clasificadores, lectores, migración de hechos/descuentos, escritura de los cinco archivos y la función orquestadora `procesar()` |
+
+Mapa de funciones de `core.py` por etapa:
+
+| Etapa | Funciones |
+|---|---|
+| Clasificación | `_match_canon`, `clasificar_generico`, `clasificar_resolucion`, `clasificar_afp`, `clasificar_establecimiento`, `generar_listas_canonicas`, `extraer_valores_unicos` |
+| Lectura | `leer_fuente`, `leer_dim_establecimiento` |
+| Transformación | `migrar_hechos`, `migrar_descuentos`, `construir_dim_afp`, `extraer_montos_dobles` |
+| Escritura | `escribir_dim_funcionario`, `escribir_dim_establecimiento`, `escribir_dim_afp`, `escribir_hechos`, `escribir_hechos_descuentos` (+ utilidades `_estilizar_header`, `_autoancho`, `_escribir_dim`, `_add_ref`, `_add_dv`) |
+| Orquestación | `procesar` (punto de entrada único) |
+
+---
+
+## 4. El pipeline paso a paso
+
+`procesar(src_bytes, dim_est_bytes, log_callback=None, pbit_data=None)` ejecuta las siguientes etapas:
+
+```{mermaid}
+flowchart TD
+    A["leer_fuente()<br/>planilla madre"] --> D
+    B["leer_dim_establecimiento()<br/>tabla maestra"] --> D
+    D["Reporte de folios repetidos<br/>(advertencia de duplicados)"] --> E
+    E["generar_listas_canonicas()<br/>log de clasificación crudo → canónico"] --> F
+    F["migrar_hechos()<br/>consolidación + deduplicación"] --> G
+    G["migrar_descuentos()<br/>formato ancho → largo"] --> H
+    H["construir_dim_afp()<br/>AFPs y tasas observadas"] --> I
+    I["escribir_*()<br/>5 archivos + ZIP"] --> J["SLEP_files.zip"]
+```
+
+1. **Lectura** de la planilla madre: hoja `DATOS` (funcionarios), hoja `LM01-2024` (unidades/centros de costo) y todas las hojas `LM*` (hechos de licencias).
+2. **Lectura** del maestro de establecimientos.
+3. **Diagnóstico de folios repetidos** entre hojas (se reporta en el log cuántos folios aparecen más de una vez).
+4. **Clasificación canónica**: se extraen todos los valores crudos únicos de Tipo de Licencia, Institución de Salud y Resolución Médica, se clasifican y se emite al log el detalle `canónico ← [variantes crudas]`, incluyendo lo que quedó `SIN CLASIFICAR`.
+5. **Migración de hechos**: canonización fila a fila, cruce con funcionarios, extracción de montos y **deduplicación** (gana la fuente más reciente). Las inconsistencias se acumulan por fila.
+6. **Migración de descuentos**: pivoteo de las columnas mensuales a una tabla por período.
+7. **Dimensión AFP**: combinaciones AFP+tasa observadas, con reglas de imputación.
+8. **Escritura**: los cinco `.xlsx` con formato, validaciones y fórmulas, más el `.zip` (y el `.pbit` si se entregó).
+
+El log que emite el pipeline es la **primera herramienta de auditoría**: muestra cuántos funcionarios se leyeron, cuántos folios estaban repetidos, qué valores crudos mapearon a cada categoría canónica, cuáles quedaron sin clasificar y qué establecimientos nuevos requieren revisión.
+
+---
+
+## 5. Entradas esperadas
+
+### 5.1 Planilla madre de licencias (`.xlsx`)
+
+| Hoja | Obligatoria | Estructura esperada |
+|---|---|---|
+| `DATOS` | Sí | Encabezados en **fila 1**: `RUN`, `Nombre`, `Fecha Nacimiento`, `Sexo`, `Estado Civil`, `Dirección`, `Comuna`, `Teléfono`, `Teléfono Emergencia`, `Nacionalidad`, `Formación Profesional`, `Cargo`, `Centro de Costo`. Un funcionario por fila |
+| `LM01-2024` | Sí | Encabezados en **fila 2**; se usa su columna `Unidad` (desde fila 3) como fuente adicional de establecimientos |
+| `LM*` (resto) | Al menos una | Hojas de hechos. La fila de encabezado se detecta automáticamente entre las filas 1 y 2 buscando una celda que contenga "rut" |
+
+**Tolerancias del lector de hechos** (nombres de columna alternativos aceptados):
+
+| Concepto | Encabezados aceptados |
+|---|---|
+| Folio | `Folio licencia`, `Folio Minsal` |
+| Fechas | `Fecha Inicio` / `Fech. Inicio`, `Fecha Termino` / `Fech. Termino` |
+| Días | `Días LM`, `Días Lic` |
+| Institución | `Institución Salud`, `Institucion Salud` |
+| Estado | `Resolución Médica`, `Resolucion Medica` (con *fallback* a `Estado`) |
+| Establecimiento | `Estableciemiento` *(sic, error histórico de la planilla)*, `Establecimiento`, `Unidad`, `Centro de Costo`, `Lugar`, `Sede`, `Ubicacion` |
+| AFP | `A.F.P.` |
+
+> **Nota**: los libros se leen con `data_only=True`, es decir, se toma el **último valor calculado** por Excel de cada celda, no las fórmulas (ver RB-16 y RB-03).
+
+### 5.2 Maestro de establecimientos (`Establecimientos.xlsx`)
+
+Primera hoja del libro; la fila de encabezado se detecta dentro de las primeras 4 filas buscando la celda `Tipo`. Columnas esperadas: `Tipo`, `Nombre establecimiento`, `Comuna`, `Dirección`, `Telefono`, `Sitio web`. Nombres duplicados se ignoran (gana la primera aparición).
+
+---
+
+## 6. Catálogo de reglas de negocio y estandarizaciones
+
+Esta es la sección central del documento. Cada regla tiene un identificador **RB-\***, que también aparece como comentario en el código (`# RB-04`, por ejemplo), de modo que siempre se puede ir de la regla al punto exacto donde se aplica.
+
+**Resumen del catálogo:**
+
+| ID | Regla | Dónde se aplica |
+|---|---|---|
+| RB-01 | Normalización canónica de texto | `utils.norm()` — todo texto libre |
+| RB-02 | Normalización de RUT | `utils.norm_rut()` — todas las columnas de RUT |
+| RB-03 | Errores de Excel = vacío | Todos los clasificadores |
+| RB-04 | Clasificación en cascada: regex → fuzzy → revisar | Tipo Licencia, Institución Salud, Resolución |
+| RB-05 | Números de resolución legacy no son un estado | Resolución Médica |
+| RB-06 | AFP: parseo "Nombre (tasa)" | Columna `A.F.P.` |
+| RB-07 | AFP: imputación de tasas y valores centinela | `Dim_AFP` y hechos |
+| RB-08 | Establecimientos: cascada de 4 niveles | Columna de establecimiento/unidad |
+| RB-09 | Identificación del funcionario: RUT → nombre difuso → placeholder | Cruce hechos ↔ funcionarios |
+| RB-10 | Deduplicación de hechos: gana la fuente más reciente | Consolidación entre hojas |
+| RB-11 | Montos dobles: Sistema vs. Pagado (2024 / 2025-2026) | Las 8 columnas de montos |
+| RB-12 | Descuentos por período `YYYY-MM` | `Hechos_Descuentos` |
+| RB-13 | Fecha término < inicio = inconsistencia (no se descarta) | Validación de fechas |
+| RB-14 | Detección automática de encabezados | Lectura de hojas |
+| RB-15 | Filas sin RUT ni folio se omiten | Migración |
+| RB-16 | Se leen valores calculados, no fórmulas | Lectura de libros |
+
+### 6.1 RB-01 — Normalización canónica de texto (`norm`)
+
+Antes de comparar cualquier texto, se transforma a una forma estándar. Así, variantes como `" FONASA "`, `"fonasa"` y `"Fonasa"` se vuelven idénticas.
+
+Transformaciones, en orden:
+
+1. `None` → cadena vacía.
+2. Se quitan las **tildes** (descomposición Unicode NFD): `"El Mañío"` → `"El Manio"`.
+3. Todo a **minúsculas** y recorte de extremos.
+4. Espacios múltiples, tabulaciones y saltos de línea → **un solo espacio**.
+5. `"n°"` / `"n °"` → `"n "` (uniforma la numeración de establecimientos: `"Escuela N°334"` → `"escuela n 334"`).
+
+> **Consecuencia práctica (TI)**: todas las expresiones regulares de `constants.py` están escritas deliberadamente **sin tildes y en minúsculas**, porque siempre operan sobre el texto ya normalizado. Cualquier regex nueva debe seguir esta convención.
+
+### 6.2 RB-02 — Normalización de RUT (`norm_rut`)
+
+- Se elimina todo lo que no sea dígito o `K` (puntos, guiones, espacios) y se reconstruye como `NNNNNNNN-DV` en mayúsculas: `"12.345.678-k"` → `"12345678-K"`.
+- Si el resultado tiene menos de 2 caracteres útiles, se considera inválido (`None`).
+- **Decisión de negocio**: *no* se valida el dígito verificador (módulo 11). El histórico contiene RUT con DV incorrecto y se optó por **conservarlos tal cual** para no perder trazabilidad del registro.
+
+### 6.3 RB-03 — Errores de Excel tratados como vacío
+
+Las celdas con fórmulas rotas llegan como texto de error: `#N/A`, `#REF!`, `#VALUE!`, `#NUM!`, `#NAME?`, `#NULL!`, `#DIV/0!`, `#ERROR!`, `#N/D` (conjunto `EXCEL_ERRORS`).
+
+**Regla**: cualquier celda con un error cacheado se trata como **vacía** (estado `"Vacio (error Excel)"`), porque es una fórmula rota de la planilla madre, no un dato real.
+
+### 6.4 RB-04 — Clasificación en cascada: regex → fuzzy → revisar
+
+Es la estrategia general para convertir texto libre en valores canónicos. Se aplica a Tipo de Licencia, Institución de Salud y Resolución Médica:
+
+```
+¿Es error de Excel?  → "Vacio (error Excel)"
+¿Está vacío?         → "Vacio"
+¿Coincide una regex? → valor canónico, estado "OK"
+¿Es "casi igual" a un valor canónico? (similitud ≥ 0,6)
+                     → valor canónico, estado "Corregido (revisar)"
+Nada de lo anterior  → se conserva el texto crudo, estado "REVISAR: no reconocido"
+```
+
+- Las **regex** se evalúan con coincidencia parcial (`re.search`) y en **orden de declaración**: gana la primera que coincide.
+- El paso **fuzzy** (algoritmo de similitud de `difflib`) rescata errores ortográficos leves, por ejemplo `"enfermedad comun "` o `"fonza"`. El umbral es 0,6 (60 % de similitud).
+- Nada se pierde silenciosamente: lo no reconocido queda en la planilla con la marca `REVISAR` en la columna "Detalle inconsistencia".
+
+### 6.5 Estandarización — Tipos de licencia (`RE_TIPO`)
+
+Nueve categorías canónicas según la normativa chilena de licencias médicas. Tabla de equivalencias (los patrones se escriben sobre texto normalizado, ver RB-01):
+
+| Valor canónico | Patrones regex | Ejemplos de texto crudo que captura |
+|---|---|---|
+| `Enfermedad o Accidente Comun` | `enfermedad.*accidente` · `accidente.*comun` · `comun.*accidente` · `enfermedad.*comun` | "Enfermedad común", "Accidente común", "Común o accidente" |
+| `Medicina Preventiva` | `medicina.*preventiva` · `preventiva` · `prorroga.*preventiva` | "Medicina preventiva", "Prórroga medicina preventiva" |
+| `Licencia maternal` | `maternal` · `maternidad` · `pre.*natal` · `post.*natal` | "Maternal", "Pre natal", "Postnatal" |
+| `Licencia parental` | `parental` · `paternidad` | "Licencia parental", "Paternidad" |
+| `Enfermedad grave del hijo menor de un ano` | `grave.*hijo` · `hijo.*grave` · `menor.*un.*ano` · `menor.*de.*1` | "Enfermedad grave hijo", "Hijo menor de un año" |
+| `Accidente del trabajo o del trayecto` | `accidente.*trabajo` · `trabajo.*accidente` · `trayecto` | "Accidente del trabajo", "Accidente de trayecto" |
+| `Enfermedad profesional` | `enfermedad.*profesional` · `profesional.*enfermedad` | "Enfermedad profesional" |
+| `Patologia del embarazo` | `patologia.*embarazo` · `embarazo.*patologia` · `sintoma.*aborto` | "Patología del embarazo", "Síntoma de aborto" |
+| `Ley SANNA` | `sanna` · `acompanamiento.*nino` · `condicion.*grave` | "Ley SANNA", "Acompañamiento niño" |
+
+**Lectura de los patrones (negocio)**: `.*` significa "puede haber cualquier cosa (o nada) entremedio". Así, `accidente.*trabajo` captura tanto "accidente trabajo" como "accidente en el trabajo".
+
+### 6.6 Estandarización — Instituciones de salud (`RE_INST`)
+
+| Valor canónico | Patrones regex | Notas |
+|---|---|---|
+| `Fonasa` | `fonasa` | |
+| `Banmedica` | `banm[eé]dica` | Admite "Banmédica" con tilde |
+| `Consalud` | `consalud` | |
+| `Cruz Blanca` | `cruz\s*blanca` | `\s*` = espacios opcionales ("CruzBlanca") |
+| `Colmena` | `colmena` | |
+| `Vida Tres` | `vida\s*tres` | |
+| `Nueva Masvida` | `nueva\s*masvida` · `masvida` | El patrón genérico `masvida` absorbe cualquier variante |
+| `Esencial` | `esencial` | |
+| `Isapre Banco Estado` | `banco\s*estado` · `fundaci[oó]n` | Incluye Fundación (Banestado) |
+| `Mutual` | `mutual` | Mutual de Seguridad |
+| `ISP` | `isp` | Instituto de Salud Pública |
+
+### 6.7 Estandarización — Resolución médica (`RE_RESOL` y RB-05)
+
+Estados de tramitación de la licencia. Se usan **raíces de palabra** para cubrir todas las flexiones:
+
+| Valor canónico | Patrones | Cubre |
+|---|---|---|
+| `Autorizada` | `autoriz` | "Autorizada", "autorizado", "se autoriza" |
+| `Rechazada` | `rechaz` · `anul` | "Rechazada", "Anulada", "anulado" |
+| `Ampliada` | `ampli` | "Ampliada", "ampliación" |
+| `Reducida` | `reduc` | "Reducida", "reducción" |
+| `Pendiente` | `pendient` · `tramit` · `n/c` | "Pendiente", "en trámite", "N/C" |
+
+**RB-05 (legacy)**: en registros antiguos la columna "Resolución Médica" contiene el **número** de la resolución (ej. `12345678-9`, `1.234.567`) en vez del estado. Si el valor es solo dígitos/puntos/guiones, se deja vacío y se anota `"LEGACY: es un N de resolucion, no un estado"`, **sin** marcarlo como inconsistencia.
+
+Si "Resolución Médica" está vacía, se intenta clasificar la columna `Estado` como alternativa.
+
+### 6.8 Estandarización — Establecimientos (`RE_ESTABLECIMIENTO` y RB-08)
+
+Los establecimientos tienen, además de las regex, una **tabla maestra oficial** (`Establecimientos.xlsx`). Por eso la cascada aquí tiene cuatro niveles:
+
+```
+1. EXACTO:  coincide (normalizado) con el maestro      → "OK"
+2. REGEX:   coincide con un patrón de variantes conocidas → "OK (regex)"
+3. FUZZY:   similitud ≥ 0,82 con el maestro            → "Corregido (revisar)"
+4. NUEVO:   no existe en el maestro                    → se agrega a Dim_Establecimiento
+            con Tipo = "Otro" y se marca "NUEVO: ... debe revisarse"
+```
+
+- El umbral fuzzy es **más alto** que el genérico (0,82 vs. 0,6) para no fusionar por error escuelas con nombres parecidos.
+- Las variantes históricas conocidas están codificadas como regex; patrones típicos: `n[°o]?` (acepta "n°334", "no 334", "n 334"), `d-?120` (acepta "D-120" y "D120"), apodos opcionales como "poeta", "dr.", "polivalente".
+- **Regla especial**: las unidades administrativas de la Dirección Ejecutiva (cualquier "Unidad de …" del SLEP, "UATP SLEP", etc.) se canonizan todas como **`Servicio Local Los Libertadores`**, porque no son establecimientos educacionales.
+- Si la fila de la licencia no trae establecimiento, se usa como *fallback* el **Centro de Costo del funcionario** (de la hoja `DATOS`), pasando por la misma cascada.
+- El catálogo completo de los 49 establecimientos/unidades está en el [Anexo A](#anexo-a--catálogo-completo-de-establecimientos).
+
+### 6.9 Estandarización — AFP (`AFP_MAP`, RB-06 y RB-07)
+
+**RB-06 — Parseo "Nombre (tasa)"**: la planilla registra la AFP como texto libre, a menudo con la tasa de cotización entre paréntesis: `"Habitat (11,27)"`. La regex `^([^\(]+?)\s*(?:\(([\d.,]+)\))?\s*$` separa nombre y tasa, aceptando coma o punto decimal. La canonización del nombre es por **igualdad exacta** sobre el texto normalizado (con respaldo fuzzy 0,6):
+
+| Texto normalizado | AFP canónica | | Texto normalizado | AFP canónica |
+|---|---|---|---|---|
+| `modelo` | Modelo | | `cuprum` | Cuprum |
+| `capital` | Capital | | `pensionado` | Pensionado (no aplica AFP) |
+| `provida` | Provida | | `empart` | Empart |
+| `habitat` | Habitat | | `ee municipales de la republica` | EE Municipales de la República |
+| `plan vital` | Plan Vital | | `sss` | S.S.S |
+| `uno` | Uno | | | |
+
+`Empart`, `EE Municipales de la República` y `S.S.S` son regímenes previsionales antiguos/especiales presentes en el histórico.
+
+**RB-07 — Tasas**:
+
+- Si la fila trae la tasa entre paréntesis, se usa esa.
+- Si no la trae, se **hereda la tasa conocida** de esa AFP observada en cualquier otra hoja del histórico.
+- Si jamás se observó tasa para esa AFP, se registra **`-1`** como señal de "dato faltante a completar" en `Dim_AFP`.
+- `No Aplica` y `Pensionado (no aplica AFP)` siempre tienen tasa **0** y se fuerzan como registros fijos de `Dim_AFP`.
+- Una AFP **no reconocida** se degrada a `No Aplica` con tasa 0 y queda marcada como inconsistencia (`AFP: REVISAR...`).
+
+### 6.10 Identificación del funcionario (RB-09)
+
+Cada hecho se cruza con `Dim_Funcionario` (hoja `DATOS`) así:
+
+```
+1. Por RUT normalizado (RB-02)                  → encontrado
+2. Si no, por NOMBRE con similitud difusa ≥ 0,85 → se adopta el RUT del funcionario
+3. Si tampoco: PLACEHOLDER — se crea el funcionario en Dim_Funcionario
+   solo con RUT y nombre, y se marca la inconsistencia
+   "RUT/Nombre no encontrado en Dim_Funcionario"
+```
+
+El paso 3 garantiza que **no queden RUT huérfanos**: la fila se conserva y el equipo puede completar después los datos del funcionario en `01_Dim_Funcionario.xlsx`.
+
+### 6.11 Deduplicación de hechos (RB-10)
+
+Un mismo evento de licencia puede aparecer en varias hojas (por ejemplo, en `LM01-2024` y de nuevo en `LM01-2025`).
+
+- **Clave de duplicado**: `(RUT, Folio, Fecha Inicio)` — deliberadamente *no* incluye Fecha Término ni Fuente.
+- **Ganador**: el registro proveniente de la hoja de **mayor año** (el año se extrae del nombre de la hoja con la regex `(\d{4})`; ej. `LM03-2025` → 2025). Se asume que la fuente más reciente tiene el dato más corregido.
+- Antes de deduplicar, el pipeline reporta en el log cuántos **folios repetidos** existen y en cuántos registros totales.
+
+### 6.12 Montos dobles: Sistema vs. Pagado (RB-11)
+
+La planilla madre lleva **dos circuitos de montos en paralelo** por licencia, y el migrador los conserva separados en 8 columnas:
+
+| Bloque | Significado (negocio) | Columnas de salida |
+|---|---|---|
+| **Sistema** | Cálculo del sistema de remuneraciones (Dep/Netcore) | `Monto Subsidio Sistema`, `Monto Cotizacion Previsional Sistema`, `Monto Previsional Salud Sistema`, `Total Sistema` |
+| **Pagado** | Lo efectivamente pagado por FONASA/ISAPRE | `Monto Subsidio Pagado`, `Monto Cotizacion Previsional Pagado`, `Monto Previsional Salud Pagado`, `Total Pagado` |
+
+La estructura de columnas de origen cambia según el año de la hoja, y el extractor se adapta solo:
+
+- **Patrón 2024**: ambos bloques repiten los mismos encabezados ("Monto de Subsidio", "Monto cotizacion previsional", "Monto Previsional Salud", "Total"); se distinguen por **primera vs. segunda ocurrencia** del encabezado.
+- **Patrón 2025/2026**: el bloque Sistema usa columnas llamadas exactamente `AFP` y `SALUD` (más "Monto de Subsidio" y "Total"); el bloque Pagado mantiene los nombres largos, y su total puede llamarse `Total` o `Total Recuperado`.
+- **Discriminante**: si la hoja tiene columnas `AFP` y `SALUD` (como montos), se asume patrón 2025/2026; si no, 2024.
+
+### 6.13 Descuentos por período (RB-12)
+
+Las hojas traen los descuentos en formato **ancho**: una columna por mes, con encabezado `MONTO DESCONTADO <MES> <AÑO>` (ej. "MONTO DESCONTADO MARZO 2025"). El migrador los pivotea a formato **largo** en `05_Hechos_Descuentos.xlsx`:
+
+- Regex de detección: `MONTO\s+DESCONTADO\s+(\w+)\s+(\d{4})` (insensible a mayúsculas).
+- El período se normaliza a **`YYYY-MM`** usando el mapa de meses (`ENERO`→`01`, …, `DICIEMBRE`→`12`).
+- Solo se emiten montos **distintos de cero**; celdas vacías o en 0 no generan registro; valores no numéricos se ignoran.
+- Cada fila queda trazable: `Folio Licencia`, `RUT`, `Periodo`, `Monto Descuento`, `Fuente` (hoja de origen).
+
+### 6.14 Otras validaciones
+
+- **RB-13**: si `Fecha Termino < Fecha Inicio` (ambas fechas válidas), la fila se **conserva** pero se anota la inconsistencia `"Fecha Termino anterior a Fecha Inicio"`.
+- **RB-14**: la fila de encabezado de cada hoja de hechos se detecta entre las filas 1 y 2 buscando una celda que contenga "rut"; en el maestro de establecimientos, dentro de las primeras 4 filas buscando "Tipo".
+- **RB-15**: filas sin RUT **ni** folio se omiten (no hay forma de trazarlas).
+- **RB-16**: los libros se leen con `data_only=True` (valores calculados, no fórmulas). Combinado con RB-03, las fórmulas rotas terminan como vacío.
+
+### 6.15 Catálogo de estados de migración
+
+La columna **"Detalle inconsistencia"** de `Hechos_Licencias` resume, por fila, todo lo que requiere atención (vacía = fila impecable). Valores posibles:
+
+| Estado | Significado | Acción sugerida |
+|---|---|---|
+| `OK` *(no se escribe)* | Todo clasificó limpiamente | — |
+| `Corregido (revisar)` | Se corrigió por similitud (fuzzy) | Verificar que la corrección sea acertada |
+| `REVISAR: no reconocido` | Ninguna regex ni fuzzy reconoció el valor | Completar a mano; considerar agregar la variante a `constants.py` |
+| `NUEVO: no esta en Dim_Establecimiento...` | Establecimiento nuevo, agregado como Tipo "Otro" | Confirmar nombre oficial en el maestro y regenerar |
+| `Vacio (error Excel)` | La celda tenía una fórmula rota en la planilla madre | Revisar el origen si el dato debiera existir |
+| `LEGACY: es un N de resolucion, no un estado` | El campo traía un número de resolución histórico | Informativo; no exige acción |
+| `RUT/Nombre no encontrado en Dim_Funcionario` | Se creó un funcionario placeholder | Completar sus datos en `01_Dim_Funcionario.xlsx` |
+| `Fecha Termino anterior a Fecha Inicio` | Fechas invertidas en el origen | Corregir las fechas de la licencia |
+
+---
+
+## 7. Salidas generadas
+
+`procesar()` devuelve un paquete de archivos (todo se entrega también comprimido en **`SLEP_files.zip`**):
+
+| Archivo | Tipo | Contenido |
+|---|---|---|
+| `01_Dim_Funcionario.xlsx` | Dimensión | Un funcionario por fila (incluye placeholders RB-09), ordenado por nombre: RUT, Nombre, Fecha Nacimiento, Sexo, Estado Civil, Dirección, Comuna, Teléfonos, Nacionalidad, Formación Profesional, Cargo, Establecimiento |
+| `02_Dim_Establecimiento.xlsx` | Dimensión | Maestro de establecimientos + los **nuevos** detectados (Tipo "Otro"), deduplicado por nombre: Establecimiento, Tipo, Comuna, Dirección, Teléfono, Sitio Web |
+| `03_Dim_AFP.xlsx` | Dimensión | Combinaciones AFP + Tasa observadas (con centinela `-1` para tasas desconocidas, RB-07), más los registros fijos "No Aplica" y "Pensionado (no aplica AFP)" |
+| `04_Hechos_Licencias.xlsx` | **Hechos (planilla madre nueva)** | Hechos migrados deduplicados **+ 40 filas en blanco** para imputar nuevas licencias, con autorrelleno y validaciones |
+| `05_Hechos_Descuentos.xlsx` | Hechos | Descuentos en formato largo (Folio, RUT, Periodo `YYYY-MM`, Monto, Fuente) |
+| `Dashboard_Licencias.pbit` | Plantilla | Dashboard de Power BI (solo si se entregó en la entrada) |
+
+Todos los `.xlsx` salen con el mismo formato corporativo: encabezado azul congelado, bordes, autoancho y **tabla nativa de Excel** (filtros incluidos), listos para conectar a Power BI.
+
+### 7.1 `04_Hechos_Licencias.xlsx` en detalle
+
+Es el archivo de trabajo diario. Estructura de columnas (26), con código de colores por bloque semántico:
+
+| Bloque | Color | Columnas |
+|---|---|---|
+| Funcionario | Verde | `RUT`, `Nombre`, `Fecha Nacimiento`, `Sexo`, `Establecimiento` |
+| Licencia | Azul | `Folio Licencia`, `Fecha Inicio`, `Fecha Termino`, `Dias LM`, `Tipo Licencia`, `Institucion Salud`, `A.F.P.`, `Tasa AFP`, `Resolucion Medica` |
+| Montos Sistema | Rojo | Las 4 columnas `... Sistema` (RB-11) |
+| Montos Pagado | Fucsia | Las 4 columnas `... Pagado` (RB-11) |
+| Trazabilidad | Naranjo | `Observaciones`, `Aplica Descuentos`, `Fuente`, `Detalle inconsistencia` |
+
+**Mecánicas de autorrelleno y validación** (para las filas nuevas que el equipo impute):
+
+- `Nombre`, `Fecha Nacimiento` y `Sexo` se completan solos con fórmula `INDEX/MATCH` desde el RUT. El `Establecimiento`, en cambio, se escribe como **valor directo** del hecho (decisión de diseño: el centro de costo del funcionario puede cambiar con el tiempo; el hecho conserva el suyo).
+- `Tasa AFP`: en filas migradas queda el valor histórico; en filas nuevas se autocompleta desde `Dim_AFP` al elegir la `A.F.P.`.
+- `Aplica Descuentos`: muestra `No`, o un **enlace clicable** `Sí (n desc.)` que abre `05_Hechos_Descuentos.xlsx` directamente en la primera fila del folio (fórmula `HYPERLINK` + `COUNTIF`).
+- **Listas desplegables** para `Tipo Licencia`, `Institucion Salud`, `Resolucion Medica` y `A.F.P.` (solo valores canónicos).
+- **Validación de RUT**: solo admite RUT existentes en `Dim_Funcionario`.
+- **Validación de fechas**: rango 01-01-2020 a 31-12-2100.
+- Hojas ocultas `ref_Funcionario`, `ref_AFP`, `ref_Listas` y `ref_Descuentos`: son copias internas que alimentan las fórmulas y validaciones. **No se editan a mano**; se actualizan regenerando el archivo.
+- La primera hoja, `Instrucciones`, resume estas reglas para el usuario final.
+
+---
+
+## 8. Modelo estrella y Power BI
+
+Los cinco archivos conforman un **esquema estrella**: dos tablas de hechos al centro y tres dimensiones alrededor.
+
+```{mermaid}
+flowchart TD
+    F["Dim_Funcionario<br/>(RUT)"]
+    E["Dim_Establecimiento<br/>(Establecimiento)"]
+    A["Dim_AFP<br/>(AFP)"]
+    H["Hechos_Licencias<br/>(una fila por licencia)"]
+    D["Hechos_Descuentos<br/>(una fila por descuento mensual)"]
+    F -->|RUT| H
+    E -->|Establecimiento| H
+    A -->|AFP| H
+    H -->|Folio Licencia| D
+```
+
+Relaciones a armar en Power BI (también indicadas en la hoja `Instrucciones`):
+
+- `Hechos_Licencias.RUT → Dim_Funcionario.RUT`
+- `Hechos_Licencias.Establecimiento → Dim_Establecimiento.Establecimiento`
+- `Hechos_Licencias.A.F.P. → Dim_AFP.AFP`
+- `Hechos_Descuentos.Folio Licencia → Hechos_Licencias.Folio Licencia`
+
+---
+
+## 9. Guía de mantenimiento
+
+### 9.1 Agregar o corregir un establecimiento
+
+1. Agregarlo al maestro `Establecimientos.xlsx` con su nombre oficial (esto alimenta la coincidencia exacta y el fuzzy).
+2. Si en la planilla histórica aparece escrito de otra forma, agregar esa variante como regex en `RE_ESTABLECIMIENTO` (`constants.py`), bajo el nombre canónico oficial.
+3. Regenerar. Los que queden como "NUEVO" en el log indican variantes aún no mapeadas.
+
+### 9.2 Agregar un tipo de licencia, institución o estado
+
+- Editar el mapa correspondiente en `constants.py` (`RE_TIPO`, `RE_INST`, `RE_RESOL`): nueva clave canónica + lista de patrones.
+- Recordar que las listas desplegables de `Hechos_Licencias` se generan desde estas mismas claves: al agregar la categoría y regenerar, aparece sola en las validaciones.
+
+### 9.3 Agregar una AFP nueva
+
+Agregar la entrada `"nombre normalizado": "Nombre Canónico"` en `AFP_MAP`. Si tiene tasa conocida, conviene que aparezca al menos una vez con tasa entre paréntesis en el histórico (si no, quedará con el centinela `-1`).
+
+### 9.4 Incorporar un nuevo año de datos
+
+No requiere cambios de código **si** la hoja nueva sigue las convenciones: nombre `LM...AAAA` (el año se lee del nombre para la deduplicación RB-10), encabezados dentro de las filas 1-2 con una celda "rut", y columnas con los nombres (o alias) de la sección 5.1. Si el formato de montos cambia, revisar RB-11.
+
+### 9.5 Convenciones para escribir regex nuevas (TI)
+
+- Siempre **sin tildes, en minúsculas** (el texto ya pasó por `norm()`, RB-01).
+- Usar `\s*` entre palabras para tolerar espaciado irregular; `.*` cuando pueden haber palabras intermedias.
+- La coincidencia es **parcial** (`re.search`): no anclar con `^...$` salvo que se quiera coincidencia exacta.
+- El **orden importa**: poner primero lo más específico; la primera clave que coincide gana.
+- Probar con valores reales del log "SIN CLASIFICAR" antes de regenerar en producción.
+
+### 9.6 Ciclo de regeneración
+
+Las hojas `ref_*` y las listas desplegables se alimentan de las dimensiones. Flujo recomendado cuando cambia una dimensión: actualizar el maestro/archivo correspondiente → correr el migrador → revisar el log (especialmente "SIN CLASIFICAR" y "NUEVO") → distribuir el nuevo ZIP.
+
+---
+
+## 10. Riesgos conocidos y limitaciones
+
+- **Correcciones fuzzy no son verdad absoluta**: todo lo marcado "Corregido (revisar)" debe auditarse; un umbral de 0,6 puede atraer valores a la categoría equivocada en textos muy cortos.
+- **El orden de las regex es significativo**: al evaluarse en orden de declaración, un patrón amplio declarado antes puede "capturar" un texto que debía ir a otra categoría (ej. `preventiva` sola captura cualquier frase que la contenga). Es intencional, pero hay que conocerlo al editar.
+- **`masvida` absorbe variantes**: cualquier texto con "masvida" cae en "Nueva Masvida" por diseño.
+- **Duplicados por folio compartido**: si dos licencias *distintas* compartieran RUT + Folio + Fecha Inicio, la deduplicación (RB-10) conservaría solo una. El log de folios repetidos es la herramienta para detectar estos casos.
+- **Dependencia de convenciones de la planilla madre**: nombres de hoja `LM*`, fila de encabezado con "rut", columnas con los alias conocidos. Una planilla que se salga de estas convenciones puede requerir ajustes.
+- **Tasa centinela `-1`**: indica AFP reconocida cuya tasa nunca apareció en el histórico; debe completarse en `Dim_AFP` antes de usar montos calculados con ella.
+- **El RUT no valida dígito verificador** (decisión consciente, RB-02): un RUT mal digitado en el origen se propaga tal cual.
+
+---
+
+## 11. Glosario
+
+| Término | Definición |
+|---|---|
+| **Valor canónico** | Nombre oficial y único de una categoría (ej. `Fonasa`), al que se mapean todas sus variantes de escritura |
+| **Normalización** | Transformación de texto a una forma estándar comparable (minúsculas, sin tildes, espacios simples) |
+| **Regex / expresión regular** | Patrón de texto que describe un conjunto de cadenas posibles; motor de las reglas de clasificación |
+| **Fuzzy matching** | Coincidencia por similitud aproximada (no exacta); rescata errores ortográficos |
+| **Hecho** | Registro de un evento: una licencia médica (`Hechos_Licencias`) o un descuento mensual (`Hechos_Descuentos`) |
+| **Dimensión** | Tabla de referencia con atributos descriptivos (Funcionario, Establecimiento, AFP) |
+| **Esquema estrella** | Modelo de datos con tablas de hechos al centro y dimensiones alrededor; estándar para Power BI |
+| **Planilla madre** | Excel histórico de licencias que es la entrada del migrador; también se llama así a la salida `04_Hechos_Licencias.xlsx` usada para imputar |
+| **Placeholder** | Registro provisional creado para no perder datos (funcionario sin ficha completa) |
+| **Pyodide / WASM** | Tecnología que permite ejecutar Python dentro del navegador, sin servidor |
+| **RB-** | Identificador de regla de negocio de este documento, referenciado también en comentarios del código |
+
+---
+
+## Anexo A — Catálogo completo de establecimientos
+
+Valores canónicos gestionados en `RE_ESTABLECIMIENTO` (49 en total: 23 escuelas, 7 liceos, 18 jardines/salas cuna y 1 comodín administrativo). Cada uno tiene asociadas en `constants.py` las regex con las variantes históricas de escritura.
+
+**Escuelas**
+
+| # | Nombre canónico |
+|---|---|
+| 1 | Escuela #334 Luis Cruz Martínez |
+| 2 | Escuela N°1414 Mercedes Fontecilla |
+| 3 | Escuela N°336 Estado de Michigan |
+| 4 | Escuela N°337 El Mañío |
+| 5 | Escuela D-120 Horacio Johnson |
+| 6 | Escuela D-124 Eloísa Díaz Insunza |
+| 7 | Escuela Profesor Humberto Aranda Iribarren |
+| 8 | Escuela N°1584 María Luisa Sepúlveda |
+| 9 | Escuela N° 1963 Ana Frank |
+| 10 | Escuela D-339 Poeta Eusebio Lillo |
+| 11 | Escuela D-338 Allipén |
+| 12 | Escuela D-151 Pedro Aguirre Cerda |
+| 13 | Escuela D-144 Valle del Inca |
+| 14 | Escuela E-140 Likan Antai |
+| 15 | Escuela D-139 Araucarias de Chile |
+| 16 | Escuela F-127 Camilo Henríquez |
+| 17 | Escuela E-125 Aviador Dagoberto Godoy |
+| 18 | Escuela E-118 Atenea |
+| 19 | Escuela D-116 Sol Naciente |
+| 20 | Escuela D-114 José Alejandro Bernales |
+| 21 | Escuela D-110 Unesco |
+| 22 | Escuela N°1668 Valle de la Luna |
+| 23 | Escuela N°1968 Pucará Lasana |
+
+**Liceos**
+
+| # | Nombre canónico |
+|---|---|
+| 24 | Liceo A-33 Federico García Lorca |
+| 25 | Liceo A-41 Abdón Cifuentes |
+| 26 | Liceo D-135 Almirante Riveros |
+| 27 | Liceo Técnico Profesional José Miguel Carrera |
+| 28 | Liceo Municipal Alcalde Jorge Indo |
+| 29 | Liceo Bicentenario Francisco Bilbao Barquín |
+| 30 | Liceo Municipal de Adultos Poeta Vicente Huidobro |
+
+**Jardines infantiles y salas cuna**
+
+| # | Nombre canónico |
+|---|---|
+| 31 | Jardín Infantil Rigoberto Puebla |
+| 32 | Jardín Infantil y sala cuna Doña Letizia |
+| 33 | Jardín Infantil y sala cuna Allipén |
+| 34 | Jardín Infantil y sala cuna Ayenhué |
+| 35 | Jardín Infantil Ayin Antu |
+| 36 | Jardín Infantil Juan XXIII |
+| 37 | Jardín Infantil Peumayén |
+| 38 | Jardín Infantil Elena Caffarena |
+| 39 | Jardín Infantil Manuel Guerrero |
+| 40 | Jardín Infantil José Manuel Parada |
+| 41 | Jardín Infantil Colmenita |
+| 42 | Jardín Infantil Los Molinos |
+| 43 | Jardín Infantil Andrés Aylwin Azócar |
+| 44 | Jardín Infantil Beato Padre Hurtado |
+| 45 | Jardín Infantil Hugo Marchant |
+| 46 | Jardín Infantil Gabriela Mistral |
+| 47 | Jardín Infantil Parinacota |
+| 48 | Sala Cuna Pascual Gambino |
+
+**Administración**
+
+| # | Nombre canónico | Detalle |
+|---|---|---|
+| 49 | Servicio Local Los Libertadores | Comodín para Dirección Ejecutiva y todas las unidades administrativas (Administración y Finanzas, Comunicaciones, Desarrollo Estratégico y Gestión de la Información, Gestión Jurídica y Transparencia, Gestión y Desarrollo de las Personas, Planificación y Control de Gestión, UATP SLEP) |
+
+---
+
+## Anexo B — Convenciones de documentación del código
+
+Los scripts de `scripts/slep/` fueron documentados siguiendo estas buenas prácticas, **sin modificar la lógica** (verificado por comparación de árboles de sintaxis abstracta y por prueba funcional de extremo a extremo con datos sintéticos: salidas idénticas celda a celda):
+
+- **Docstrings de módulo** en los cuatro archivos: propósito, entradas/salidas y rol dentro del pipeline.
+- **Docstrings estilo Google** en todas las funciones públicas e internas: `Args`, `Returns`, `Raises` cuando aplica, con ejemplos de comportamiento.
+- **Type hints** en las firmas (`from __future__ import annotations`), compatibles con Pyodide.
+- **Comentarios de regla de negocio** con el identificador `# RB-*`, trazables a la sección 6 de este documento.
+- **Constantes y mapas** con comentarios de bloque que explican el sentido de negocio de cada categoría y las convenciones de escritura de regex.
+- Estructura por secciones con banners (`CLASIFICADORES`, `LECTORES`, `TRANSFORMACIÓN`, `WRITERS`, `PIPELINE`) conservada y homogeneizada.
+
+---
+
+*Documento generado a partir del código fuente de `scripts/slep/` (versión documentada). Ante cualquier discrepancia entre este documento y el código, el código es la fuente de verdad; por favor reportarla para mantener ambos sincronizados.*
