@@ -17,6 +17,10 @@ toc: false
     <span class="course-title">Migrador</span>
     <span class="course-desc">Herramienta para facilitar la migración de datos del proyecto.</span>
   </a>
+  <a href="documentacion.html" class="course-card">
+    <span class="course-title">Documentación Técnica</span>
+    <span class="course-desc">Recursos y documentación del proyecto.</span>
+  </a>
 </div>
 
 <div class="section-header"><h2>Presentación</h2></div>
