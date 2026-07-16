@@ -16,6 +16,8 @@ website:
     left:
       - text: "Inicio"
         href: index.qmd
+      - text: "Documentación"
+        href: documentacion.qmd
       - text: "Migrador"
         href: migrador.qmd
       
