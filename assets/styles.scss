@@ -68,6 +68,19 @@ $headings-line-height:   1.25;
 
   // Icon invert filter — no-op in light mode
   --icon-invert: none;
+
+  // Mermaid
+  --mermaid-bg-color:            #{$light-bg-primary};
+  --mermaid-node-bg-color:       #{$light-bg-primary};
+  --mermaid-node-fg-color:       #{$light-border};
+  --mermaid-edge-color:          #{$light-border};
+  --mermaid-label-bg-color:      #{$light-bg-secondary};
+  --mermaid-label-fg-color:      #{$light-text};
+  --mermaid-fg-color:            #{$light-text};
+  --mermaid-fg-color--lighter:   #{$light-border};
+  --mermaid-fg-color--lightest:  color-mix(in srgb, #{$light-accent} 6%, #{$light-bg-primary});
+  --mermaid-font-family:         #{$font-family-sans-serif};
+  --mermaid-font-weight:         500;
 }
 
 // Dark mode — Quarto adds .quarto-dark to <body> when the toggle is active
@@ -101,6 +114,19 @@ body.quarto-dark {
   --bs-navbar-color:         #{$dark-text};
   --bs-navbar-hover-color:   #{$dark-accent};
   --bs-navbar-active-color:  #{$dark-accent};
+
+  // Mermaid
+  --mermaid-bg-color:            #{$dark-bg-primary};
+  --mermaid-node-bg-color:       #{$dark-bg-primary};
+  --mermaid-node-fg-color:       #{$dark-border};
+  --mermaid-edge-color:          #{$dark-border};
+  --mermaid-label-bg-color:      #{$dark-bg-secondary};
+  --mermaid-label-fg-color:      #{$dark-text};
+  --mermaid-fg-color:            #{$dark-text};
+  --mermaid-fg-color--lighter:   #{$dark-border};
+  --mermaid-fg-color--lightest:  color-mix(in srgb, #{$dark-accent} 6%, #{$dark-bg-primary});
+  --mermaid-font-family:         #{$font-family-sans-serif};
+  --mermaid-font-weight:         500;
 
   // Invert dark SVG icons (close button, accordion caret) to read on dark bg
   --icon-invert: invert(1) grayscale(100%) brightness(1.5);
