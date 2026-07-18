@@ -3,7 +3,7 @@
 > **Servicio Local de Educación Pública Los Libertadores**  
 > Procesador de datos históricos de licencias médicas con normalización, validación cruzada y generación de modelo estrella para Power BI.
 >
-> **URL de uso:** [adolforv.github.io/repositorio-SLEP/](https://adolforv.github.io/repositorio-SLEP/)
+> **URL de uso:** [adolforv.github.io/repositorio-SLEP/migrador.html](https://adolforv.github.io/repositorio-SLEP/migrador.html)
 
 ---
 
@@ -15,6 +15,7 @@
 - [Cómo usar](#cómo-usar)
 - [Entrada esperada](#entrada-esperada)
 - [Salidas generadas](#salidas-generadas)
+- [Dashboard de Power BI](#dashboard-de-power-bi)
 - [Reglas de negocio principales](#reglas-de-negocio-principales)
 - [Riesgos conocidos](#riesgos-conocidos)
 - [Licencia](#licencia)
@@ -25,15 +26,15 @@
 
 Este proyecto moderniza la gestión de licencias médicas del SLEP Los Libertadores, migrando desde una planilla Excel histórica con problemas de calidad de datos hacia un **modelo de datos normalizado** (esquema estrella) listo para análisis en Power BI.
 
-### El problema 
+### El problema histórico
 
 - **Incoherencias**: datos redundantes y contradictorios entre hojas de distintos años.
-- **Errores de entrada**: múltiples variantes ortográficas para un mismo establecimiento, institución, resolución o tipo de licencia ("FONASA", "fonasa", "Fonasa "…).
+- **Errores de entrada**: múltiples variantes ortográficas para un mismo establecimiento, institución o tipo de licencia ("FONASA", "fonasa", "Fonasa "…).
 - **Procesos manuales**: reportar e imputar licencias exigía edición manual exhaustiva y propensa a errores.
 
 ### La solución
 
-La herramienta funciona como un **procesador de datos inteligente** que corre 100 % en el navegador (sin servidor). El usuario solo debe cargar su **planilla madre** de licencias y el sitio descarga automáticamente el maestro de establecimientos y la plantilla de Power BI desde los recursos estáticos del repositorio. Al finalizar, devuelve un archivo ZIP con cinco archivos Excel normalizados y un dashboard listo para usar.
+La herramienta funciona como un **procesador de datos inteligente** que corre 100 % en el navegador (sin servidor). El usuario solo debe cargar su **planilla madre** de licencias; el sitio descarga automáticamente el maestro de establecimientos y la plantilla de Power BI desde sus propios recursos estáticos. Al finalizar, devuelve un archivo ZIP con cinco archivos Excel normalizados y un dashboard listo para usar.
 
 1. **Normaliza** automáticamente errores ortográficos y variantes de escritura mediante expresiones regulares y fuzzy matching.
 2. **Valida cruzadamente** la información entre tablas (funcionarios, establecimientos, AFPs) y reporta anomalías.
@@ -102,8 +103,8 @@ flowchart LR
 
 ### Requisitos
 
-- Navegador con soporte para Web Workers y WebAssembly (Chrome, Edge, Firefox, Safari).
-- Conexión a Internet para Pyodide (~20-30 segundos la primera vez).
+- Navegador moderno con soporte para Web Workers y WebAssembly (Chrome, Edge, Firefox, Safari).
+- Conexión a Internet para descargar Pyodide (~20-30 segundos la primera vez).
 
 ### Pasos
 
@@ -140,10 +141,19 @@ flowchart LR
 | Días | `Días LM`, `Días Lic` |
 | Institución | `Institución Salud`, `Institucion Salud` |
 | Estado | `Resolución Médica`, `Resolucion Medica` (con *fallback* a `Estado`) |
-| Establecimiento | `Estableciemiento` *(sic, error histórico)*, `Establecimiento`, `Unidad`, `Centro de Costo`, `Lugar`, `Sede`, `Ubicacion` |
+| Establecimiento | `Estableciemiento` *(sic, error histórico de la planilla)*, `Establecimiento`, `Unidad`, `Centro de Costo`, `Lugar`, `Sede`, `Ubicacion` |
 | AFP | `A.F.P.` |
 
 > **Nota técnica**: los libros se leen con `data_only=True`, es decir, se toma el **último valor calculado** por Excel de cada celda, no las fórmulas.
+
+### Recursos descargados automáticamente por el sitio
+
+El usuario **no necesita cargar** los siguientes archivos; el migrador los descarga automáticamente desde los recursos estáticos del sitio:
+
+| Recurso | Ubicación en el sitio | Descripción |
+|---|---|---|
+| Maestro de establecimientos | `assets/tables/establecimientos.xlsx` | Primera hoja del libro; la fila de encabezado se detecta dentro de las primeras 4 filas buscando la celda `Tipo`. Columnas esperadas: `Tipo`, `Nombre establecimiento`, `Comuna`, `Dirección`, `Telefono`, `Sitio web`. Nombres duplicados se ignoran (gana la primera aparición). |
+| Plantilla Power BI | `assets/Dashboard_Licencias.pbit` | Dashboard de KPIs; se incluye en el ZIP de salida si está disponible. |
 
 ---
 
@@ -186,6 +196,58 @@ Relaciones en Power BI:
 
 ---
 
+## Dashboard de Power BI
+
+El archivo `Dashboard_Licencias.pbit` es una **plantilla de Power BI** que convierte los cinco archivos Excel generados en un dashboard interactivo de 6 páginas con KPIs, alertas y análisis temporal. No contiene datos propios: al abrirla, solicita la ruta de la carpeta donde se descomprimió `SLEP_files.zip` y lee los archivos en ese momento.
+
+### Requisitos
+
+- **Power BI Desktop** (versión reciente, descargable gratuitamente desde [powerbi.microsoft.com](https://powerbi.microsoft.com/)).
+- Los cinco archivos Excel (`01_` a `05_`) en la misma carpeta que el `.pbit`.
+
+### Cómo abrir el dashboard
+
+1. Descomprimir `SLEP_files.zip` en una carpeta.
+2. Abrir `Dashboard_Licencias.pbit` con Power BI Desktop.
+3. Cuando aparezca el cuadro de diálogo, ingresar la **ruta de la carpeta** donde están los cinco Excel (debe terminar en `\` o `/`, según el sistema operativo).
+4. Power BI cargará los datos y mostrará el informe listo para usar.
+
+### Las 6 páginas del informe
+
+| Página | Qué muestra | Uso típico |
+|---|---|---|
+| **Resumen** | KPIs globales: total de licencias, autorizadas, rechazadas/reducidas, días solicitados, total recuperado. Gráficos de evolución mensual, distribución por tipo de licencia e institución de salud. | Visión ejecutiva del estado general. |
+| **Establecimientos** | Comparación entre escuelas, liceos, jardines y unidades: licencias por establecimiento, funcionarios con licencia, promedio de días. | Identificar establecimientos con mayor incidencia de licencias. |
+| **Funcionarios** | Tabla de todos los funcionarios con licencia, con filtros por nombre y estado de resolución. Muestra días aprobados en ventana de 24 meses y estado de alerta. | Búsqueda puntual de una persona y detección temprana de casos críticos. |
+| **Ficha Funcionario** | Página de **drillthrough**: se abre automáticamente al hacer clic derecho → "Obtener detalles" sobre un funcionario en las páginas "Funcionarios" o "Alertas". Muestra ficha personal, evolución mensual de días y listado detallado de cada licencia. | Análisis individual profundo. |
+| **Alertas** | Funcionarios que superan **180 días aprobados en una ventana móvil de 24 meses**. Tarjetas con cantidad de funcionarios en alerta, porcentaje y días acumulados. Tabla filtrada solo a los casos que requieren gestión. | Gestión proactiva de ausentismo prolongado. |
+| **Recuperación** | Montos recuperados vs. esperados por el sistema, brecha Sistema vs. Pagado, descuentos mensuales aplicados en remuneraciones. | Control financiero de subsidios y descuentos. |
+
+### Filtros globales
+
+- **Segmentador de establecimiento**: aparece en las 6 páginas, sincronizado. Permite filtrar todo el informe por uno o varios establecimientos.
+- **Navegador de páginas**: menú de pestañas para moverse entre las 6 páginas.
+
+### Medidas clave
+
+| Medida | Descripción |
+|---|---|
+| `Total Licencias` | Cantidad de licencias en el contexto de filtro actual. |
+| `Licencias Autorizadas` | Incluye estados "Autorizada" y "Ampliada". |
+| `Dias Solicitados` | Suma de días de licencia (columna `Dias LM`). |
+| `Total Recuperado` | Suma de `Total Pagado` (lo efectivamente reembolsado). |
+| `Brecha Sistema vs Pagado` | Diferencia entre `Total Sistema` y `Total Pagado`. |
+| `Funcionarios en Alerta` | Funcionarios con más de 180 días aprobados en los últimos 24 meses. |
+| `Total Descuentos` | Suma de descuentos mensuales aplicados en remuneraciones. |
+
+> **Nota sobre alertas**: la ventana de 24 meses es teórica; como la base tiene cobertura densa recién desde enero de 2025, la ventana "efectiva" con datos reales es algo menor mientras se acumula más historial.
+
+### Tip de uso
+
+Si se agregan nuevas licencias en las 40 filas en blanco de `04_Hechos_Licencias.xlsx`, solo hay que guardar el archivo, volver a Power BI y presionar **"Actualizar"** (o `Ctrl + Shift + E`) para que el dashboard refleje los cambios sin necesidad de regenerar todo desde la web.
+
+---
+
 ## Reglas de negocio principales
 
 Cada regla tiene un identificador **RB-*** que aparece también como comentario en el código Python (`# RB-04`, etc.), trazable desde el documento técnico.
@@ -219,6 +281,8 @@ Cada regla tiene un identificador **RB-*** que aparece también como comentario 
 - **Dependencia de convenciones de la planilla madre**: nombres de hoja `LM*`, fila de encabezado con "rut", columnas con los alias conocidos. Una planilla que se salga de estas convenciones puede requerir ajustes.
 - **Tasa centinela `-1`**: indica AFP reconocida cuya tasa nunca apareció en el histórico; debe completarse en `Dim_AFP` antes de usar montos calculados con ella.
 - **El RUT no valida dígito verificador** (RB-02): un RUT mal digitado en el origen se propaga tal cual para no perder trazabilidad.
+- **Umbral de alerta fijo en el dashboard**: los 180 días y la ventana de 24 meses están escritos como literales en las fórmulas DAX; si la política de alerta cambia, el dashboard debe editarse manualmente en Power BI Desktop.
+- **Cobertura de datos desigual en alertas**: como la base tiene datos densos recién desde enero de 2025, las alertas de "24 meses" en la práctica cubren un período menor mientras no se acumule más historial.
 
 ---
 
@@ -228,4 +292,4 @@ Proyecto interno del Servicio Local de Educación Pública Los Libertadores. Uso
 
 ---
 
-*Documento actualizado a julio de 2026. Ante cualquier discrepancia entre este README y el código fuente, el código es la fuente de verdad.*
+*Ante cualquier discrepancia entre este README y el código fuente, el código es la fuente de verdad.*
