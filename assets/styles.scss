@@ -1108,23 +1108,9 @@ table {
 
 // ─── Index / Landing Page ────────────────────────────────────────────────────
 .hero-section {
-  padding: 2rem 0 3rem;
+  padding: 1rem 0 2rem;
   border-bottom: 1px solid var(--border);
   margin-bottom: 3rem;
-
-  .hero-tag {
-    display: inline-block;
-    font-family: $font-family-monospace;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
-    padding: 0.3rem 0.75rem;
-    border-radius: 100px;
-    margin-bottom: 1.25rem;
-  }
 
   h1 {
     font-size: clamp(2.5rem, 7vw, 4.5rem);
@@ -1138,11 +1124,18 @@ table {
     span { color: var(--accent); }
   }
 
-  .hero-desc {
-    font-size: 1.15rem;
-    opacity: 0.65;
-    max-width: 540px;
-    line-height: 1.8;
+  h2 {
+    display: inline-block;
+    font-family: $font-family-monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    padding: 0.3rem 0.75rem;
+    border-radius: 100px;
+    margin-bottom: 1.25rem;
   }
 }
 
