@@ -10,6 +10,7 @@
 ## Tabla de contenidos
 
 - [Resumen](#resumen)
+- [Demo](#demo)
 - [Arquitectura](#arquitectura)
 - [Stack tecnológico](#stack-tecnológico)
 - [Cómo usar](#cómo-usar)
@@ -41,6 +42,10 @@ La herramienta funciona como un **procesador de datos inteligente** que corre 10
 3. **Genera reportes listos para usar**: planillas con alertas de inconsistencias, campos autorrellenados y listas desplegables para la imputación final.
 
 ---
+
+## Demo
+
+<video src="assets/Demo.mp4" controls width="100%" style="max-width: 800px; border-radius: 8px;"></video>
 
 ## Arquitectura
 
