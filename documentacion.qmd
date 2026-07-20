@@ -30,13 +30,13 @@ toc: true
 
 ---
 
-# 1. Introducción
+# Introducción
 
-## 1.1 Propósito de este documento
+## Propósito de este documento
 
 Este documento explica, para el equipo del SLEP Los Libertadores, **cómo está implementada la herramienta de migración de licencias médicas**, qué arquitectura tecnológica utiliza y **qué reglas de negocio, expresiones regulares y estandarizaciones aplica** sobre los datos históricos. Busca que cualquier persona del equipo pueda entender qué hace la herramienta con sus datos, y que el equipo técnico pueda mantenerla.
 
-## 1.2 Contexto y problema
+## Contexto y problema
 
 El registro de licencias médicas se llevaba históricamente en una planilla Excel ("planilla madre"), con problemas típicos de escalabilidad y calidad de datos:
 
@@ -44,7 +44,7 @@ El registro de licencias médicas se llevaba históricamente en una planilla Exc
 - **Errores de entrada**: múltiples variantes ortográficas para un mismo establecimiento, institución o tipo de licencia ("FONASA", "fonasa", "Fonasa "…).
 - **Procesos manuales**: reportar e imputar licencias exigía edición manual exhaustiva y propensa a errores.
 
-## 1.3 Qué hace la herramienta
+## Qué hace la herramienta
 
 La herramienta funciona como un **procesador de datos inteligente**. Recibe la planilla madre histórica (desde 2024) más una tabla maestra de establecimientos, y devuelve un archivo ZIP con un **modelo de datos normalizado** (esquema estrella) de cinco archivos Excel:
 
@@ -54,9 +54,9 @@ La herramienta funciona como un **procesador de datos inteligente**. Recibe la p
 
 ---
 
-# 2. Arquitectura tecnológica
+# Arquitectura tecnológica
 
-## 2.1 Vista general
+## Vista general
 
 ```{mermaid}
 flowchart LR
@@ -83,7 +83,7 @@ flowchart LR
     OUT --> PBI
 ```
 
-## 2.2 Componentes
+## Componentes
 
 | Componente | Tecnología | Rol |
 |---|---|---|
@@ -100,7 +100,7 @@ flowchart LR
 - **Reglas declarativas separadas del código**: todas las expresiones regulares y catálogos viven en `constants.py`, de modo que ajustar una regla de negocio no requiere tocar la lógica.
 - **Rendimiento en WASM**: se usan patrones eficientes para Pyodide (`iter_rows`, precálculo de índices de columnas una sola vez por hoja, lectura con `data_only=True`).
 
-## 2.3 Flujo de datos
+## Flujo de datos
 
 1. El usuario abre la página del migrador (`migrador.html`) y **carga únicamente su planilla madre** de licencias (`.xlsx`).
 2. El sitio descarga automáticamente desde sus recursos estáticos el **maestro de establecimientos** (`assets/tables/establecimientos.xlsx`) y la **plantilla de Power BI** (`assets/Dashboard_Licencias.pbit`), si está disponible.
@@ -110,7 +110,7 @@ flowchart LR
 
 ---
 
-# 3. Estructura del código
+# Estructura del código
 
 El paquete `slep` tiene cuatro módulos con responsabilidades claramente separadas:
 
@@ -133,7 +133,7 @@ Mapa de funciones de `core.py` por etapa:
 
 ---
 
-# 4. El pipeline paso a paso
+# El pipeline paso a paso
 
 `procesar(src_bytes, dim_est_bytes, log_callback=None, pbit_data=None)` ejecuta las siguientes etapas:
 
@@ -162,9 +162,9 @@ El log que emite el pipeline es la **primera herramienta de auditoría**: muestr
 
 ---
 
-# 5. Entradas esperadas
+# Entradas esperadas
 
-## 5.1 Planilla madre de licencias (`.xlsx`)
+## Planilla madre de licencias (`.xlsx`)
 
 Único archivo que el usuario debe cargar. Debe contener las siguientes hojas:
 
@@ -199,7 +199,7 @@ El usuario **no necesita cargar** los siguientes archivos; el migrador los desca
 
 ---
 
-# 6. Catálogo de reglas de negocio y estandarizaciones
+# Catálogo de reglas de negocio y estandarizaciones
 
 Esta es la sección central del documento. Cada regla tiene un identificador **RB-\***, que también aparece como comentario en el código (`# RB-04`, por ejemplo), de modo que siempre se puede ir de la regla al punto exacto donde se aplica.
 
@@ -224,7 +224,7 @@ Esta es la sección central del documento. Cada regla tiene un identificador **R
 | RB-15 | Filas sin RUT ni folio se omiten | Migración |
 | RB-16 | Se leen valores calculados, no fórmulas | Lectura de libros |
 
-## 6.1 RB-01 — Normalización canónica de texto (`norm`)
+## RB-01 — Normalización canónica de texto (`norm`)
 
 Antes de comparar cualquier texto, se transforma a una forma estándar. Así, variantes como `" FONASA "`, `"fonasa"` y `"Fonasa"` se vuelven idénticas.
 
@@ -238,19 +238,19 @@ Transformaciones, en orden:
 
 > **Consecuencia práctica (TI)**: todas las expresiones regulares de `constants.py` están escritas deliberadamente **sin tildes y en minúsculas**, porque siempre operan sobre el texto ya normalizado. Cualquier regex nueva debe seguir esta convención.
 
-## 6.2 RB-02 — Normalización de RUT (`norm_rut`)
+## RB-02 — Normalización de RUT (`norm_rut`)
 
 - Se elimina todo lo que no sea dígito o `K` (puntos, guiones, espacios) y se reconstruye como `NNNNNNNN-DV` en mayúsculas: `"12.345.678-k"` → `"12345678-K"`.
 - Si el resultado tiene menos de 2 caracteres útiles, se considera inválido (`None`).
 - **Decisión de negocio**: *no* se valida el dígito verificador (módulo 11). El histórico contiene RUT con DV incorrecto y se optó por **conservarlos tal cual** para no perder trazabilidad del registro.
 
-## 6.3 RB-03 — Errores de Excel tratados como vacío
+## RB-03 — Errores de Excel tratados como vacío
 
 Las celdas con fórmulas rotas llegan como texto de error: `#N/A`, `#REF!`, `#VALUE!`, `#NUM!`, `#NAME?`, `#NULL!`, `#DIV/0!`, `#ERROR!`, `#N/D` (conjunto `EXCEL_ERRORS`).
 
 **Regla**: cualquier celda con un error cacheado se trata como **vacía** (estado `"Vacio (error Excel)"`), porque es una fórmula rota de la planilla madre, no un dato real.
 
-## 6.4 RB-04 — Clasificación en cascada: regex → fuzzy → revisar
+## RB-04 — Clasificación en cascada: regex → fuzzy → revisar
 
 Es la estrategia general para convertir texto libre en valores canónicos. Se aplica a Tipo de Licencia, Institución de Salud y Resolución Médica:
 
@@ -267,7 +267,7 @@ Nada de lo anterior  → se conserva el texto crudo, estado "REVISAR: no reconoc
 - El paso **fuzzy** (algoritmo de similitud de `difflib`) rescata errores ortográficos leves, por ejemplo `"enfermedad comun "` o `"fonza"`. El umbral es 0,6 (60 % de similitud).
 - Nada se pierde silenciosamente: lo no reconocido queda en la planilla con la marca `REVISAR` en la columna "Detalle inconsistencia".
 
-## 6.5 Estandarización — Tipos de licencia (`RE_TIPO`)
+## Estandarización — Tipos de licencia (`RE_TIPO`)
 
 Nueve categorías canónicas según la normativa chilena de licencias médicas. Tabla de equivalencias (los patrones se escriben sobre texto normalizado, ver RB-01):
 
@@ -285,7 +285,7 @@ Nueve categorías canónicas según la normativa chilena de licencias médicas. 
 
 **Lectura de los patrones (negocio)**: `.*` significa "puede haber cualquier cosa (o nada) entremedio". Así, `accidente.*trabajo` captura tanto "accidente trabajo" como "accidente en el trabajo".
 
-## 6.6 Estandarización — Instituciones de salud (`RE_INST`)
+## Estandarización — Instituciones de salud (`RE_INST`)
 
 | Valor canónico | Patrones regex | Notas |
 |---|---|---|
@@ -301,7 +301,7 @@ Nueve categorías canónicas según la normativa chilena de licencias médicas. 
 | `Mutual` | `mutual` | Mutual de Seguridad |
 | `ISP` | `isp` | Instituto de Salud Pública |
 
-## 6.7 Estandarización — Resolución médica (`RE_RESOL` y RB-05)
+## Estandarización — Resolución médica (`RE_RESOL` y RB-05)
 
 Estados de tramitación de la licencia. Se usan **raíces de palabra** para cubrir todas las flexiones:
 
@@ -317,7 +317,7 @@ Estados de tramitación de la licencia. Se usan **raíces de palabra** para cubr
 
 Si "Resolución Médica" está vacía, se intenta clasificar la columna `Estado` como alternativa.
 
-## 6.8 Estandarización — Establecimientos (`RE_ESTABLECIMIENTO` y RB-08)
+## Estandarización — Establecimientos (`RE_ESTABLECIMIENTO` y RB-08)
 
 Los establecimientos tienen, además de las regex, una **tabla maestra oficial** (`Establecimientos.xlsx`). Por eso la cascada aquí tiene cuatro niveles:
 
@@ -335,7 +335,7 @@ Los establecimientos tienen, además de las regex, una **tabla maestra oficial**
 - Si la fila de la licencia no trae establecimiento, se usa como *fallback* el **Centro de Costo del funcionario** (de la hoja `DATOS`), pasando por la misma cascada.
 - El catálogo completo de los 49 establecimientos/unidades está en el [Anexo A](#anexo-a--catálogo-completo-de-establecimientos).
 
-## 6.9 Estandarización — AFP (`AFP_MAP`, RB-06 y RB-07)
+## Estandarización — AFP (`AFP_MAP`, RB-06 y RB-07)
 
 **RB-06 — Parseo "Nombre (tasa)"**: la planilla registra la AFP como texto libre, a menudo con la tasa de cotización entre paréntesis: `"Habitat (11,27)"`. La regex `^([^\(]+?)\s*(?:\(([\d.,]+)\))?\s*$` separa nombre y tasa, aceptando coma o punto decimal. La canonización del nombre es por **igualdad exacta** sobre el texto normalizado (con respaldo fuzzy 0,6):
 
@@ -358,7 +358,7 @@ Los establecimientos tienen, además de las regex, una **tabla maestra oficial**
 - `No Aplica` y `Pensionado (no aplica AFP)` siempre tienen tasa **0** y se fuerzan como registros fijos de `Dim_AFP`.
 - Una AFP **no reconocida** se degrada a `No Aplica` con tasa 0 y queda marcada como inconsistencia (`AFP: REVISAR...`).
 
-## 6.10 Identificación del funcionario (RB-09)
+## Identificación del funcionario (RB-09)
 
 Cada hecho se cruza con `Dim_Funcionario` (hoja `DATOS`) así:
 
@@ -372,7 +372,7 @@ Cada hecho se cruza con `Dim_Funcionario` (hoja `DATOS`) así:
 
 El paso 3 garantiza que **no queden RUT huérfanos**: la fila se conserva y el equipo puede completar después los datos del funcionario en `01_Dim_Funcionario.xlsx`.
 
-## 6.11 Deduplicación de hechos (RB-10)
+## Deduplicación de hechos (RB-10)
 
 Un mismo evento de licencia puede aparecer en varias hojas (por ejemplo, en `LM01-2024` y de nuevo en `LM01-2025`).
 
@@ -380,7 +380,7 @@ Un mismo evento de licencia puede aparecer en varias hojas (por ejemplo, en `LM0
 - **Ganador**: el registro proveniente de la hoja de **mayor año** (el año se extrae del nombre de la hoja con la regex `(\d{4})`; ej. `LM03-2025` → 2025). Se asume que la fuente más reciente tiene el dato más corregido.
 - Antes de deduplicar, el pipeline reporta en el log cuántos **folios repetidos** existen y en cuántos registros totales.
 
-## 6.12 Montos dobles: Sistema vs. Pagado (RB-11)
+## Montos dobles: Sistema vs. Pagado (RB-11)
 
 La planilla madre lleva **dos circuitos de montos en paralelo** por licencia, y el migrador los conserva separados en 8 columnas:
 
@@ -395,7 +395,7 @@ La estructura de columnas de origen cambia según el año de la hoja, y el extra
 - **Patrón 2025/2026**: el bloque Sistema usa columnas llamadas exactamente `AFP` y `SALUD` (más "Monto de Subsidio" y "Total"); el bloque Pagado mantiene los nombres largos, y su total puede llamarse `Total` o `Total Recuperado`.
 - **Discriminante**: si la hoja tiene columnas `AFP` y `SALUD` (como montos), se asume patrón 2025/2026; si no, 2024.
 
-## 6.13 Descuentos por período (RB-12)
+## Descuentos por período (RB-12)
 
 Las hojas traen los descuentos en formato **ancho**: una columna por mes, con encabezado `MONTO DESCONTADO <MES> <AÑO>` (ej. "MONTO DESCONTADO MARZO 2025"). El migrador los pivotea a formato **largo** en `05_Hechos_Descuentos.xlsx`:
 
@@ -404,14 +404,14 @@ Las hojas traen los descuentos en formato **ancho**: una columna por mes, con en
 - Solo se emiten montos **distintos de cero**; celdas vacías o en 0 no generan registro; valores no numéricos se ignoran.
 - Cada fila queda trazable: `Folio Licencia`, `RUT`, `Periodo`, `Monto Descuento`, `Fuente` (hoja de origen).
 
-## 6.14 Otras validaciones
+## Otras validaciones
 
 - **RB-13**: si `Fecha Termino < Fecha Inicio` (ambas fechas válidas), la fila se **conserva** pero se anota la inconsistencia `"Fecha Termino anterior a Fecha Inicio"`.
 - **RB-14**: la fila de encabezado de cada hoja de hechos se detecta entre las filas 1 y 2 buscando una celda que contenga "rut"; en el maestro de establecimientos, dentro de las primeras 4 filas buscando "Tipo".
 - **RB-15**: filas sin RUT **ni** folio se omiten (no hay forma de trazarlas).
 - **RB-16**: los libros se leen con `data_only=True` (valores calculados, no fórmulas). Combinado con RB-03, las fórmulas rotas terminan como vacío.
 
-## 6.15 Catálogo de estados de migración
+## Catálogo de estados de migración
 
 La columna **"Detalle inconsistencia"** de `Hechos_Licencias` resume, por fila, todo lo que requiere atención (vacía = fila impecable). Valores posibles:
 
@@ -428,7 +428,7 @@ La columna **"Detalle inconsistencia"** de `Hechos_Licencias` resume, por fila, 
 
 ---
 
-# 7. Salidas generadas
+# Salidas generadas
 
 `procesar()` devuelve un paquete de archivos (todo se entrega también comprimido en **`SLEP_files.zip`**):
 
@@ -443,7 +443,7 @@ La columna **"Detalle inconsistencia"** de `Hechos_Licencias` resume, por fila, 
 
 Todos los `.xlsx` salen con el mismo formato corporativo: encabezado azul congelado, bordes, autoancho y **tabla nativa de Excel** (filtros incluidos), listos para conectar a Power BI.
 
-## 7.1 `04_Hechos_Licencias.xlsx` en detalle
+## `04_Hechos_Licencias.xlsx` en detalle
 
 Es el archivo de trabajo diario. Estructura de columnas (26), con código de colores por bloque semántico:
 
@@ -468,11 +468,11 @@ Es el archivo de trabajo diario. Estructura de columnas (26), con código de col
 
 ---
 
-# 8. Dashboard de Power BI
+# Dashboard de Power BI
 
 El archivo `Dashboard_Licencias.pbit` es la **capa de análisis** del proyecto: convierte los cinco archivos Excel que genera `slep.procesar()` en un dashboard interactivo de 6 páginas con KPIs, alertas de ausentismo y análisis temporal. Este documento cubre sus tres capas: consultas (Power Query / M), modelo (tablas, relaciones, medidas DAX) e informe (páginas y visuales).
 
-## 8.1 Qué es un `.pbit` y cómo se relaciona con `slep`
+## Qué es un `.pbit` y cómo se relaciona con `slep`
 
 Un archivo `.pbit` es una **plantilla** de Power BI: igual que un `.pbix` pero sin datos cacheados. Al abrirla, solicita el parámetro `RutaCarpeta` y lee los cinco archivos de origen en ese momento. Técnicamente es un ZIP que contiene:
 
@@ -485,7 +485,7 @@ Un archivo `.pbit` es una **plantilla** de Power BI: igual que un `.pbix` pero s
 
 > **Nota**: el `.pbit` **no contiene datos propios**. Depende enteramente de los cinco Excel generados por `slep`. El sitio Quarto lo incluye dentro de `SLEP_files.zip`, de modo que el usuario final solo necesita descomprimir el ZIP en una carpeta y abrir la plantilla apuntando a ella.
 
-## 8.2 El parámetro `RutaCarpeta`
+## El parámetro `RutaCarpeta`
 
 Todas las consultas de origen dependen de un único parámetro de Power Query:
 
@@ -501,23 +501,23 @@ RutaArchivo = RutaCarpeta & "01_Dim_Funcionario.xlsx"
 
 > **Mantenimiento**: si se cambian los nombres de los cinco archivos de salida en `slep` (sección 7), hay que actualizar el literal correspondiente en cada consulta M.
 
-## 8.3 Consultas Power Query (origen de cada tabla)
+## Consultas Power Query (origen de cada tabla)
 
 Cinco de las seis tablas del modelo leen un archivo Excel de `RutaCarpeta` con una lógica similar: abrir el libro, promover encabezados, tipar columnas y aplicar limpieza mínima. `Dim_Calendario` es la excepción: se genera desde cero con Power Query.
 
-### 8.3.1 `Dim_Funcionario` ← `01_Dim_Funcionario.xlsx`
+### `Dim_Funcionario` ← `01_Dim_Funcionario.xlsx`
 
 Toma la **primera hoja** del libro, sin importar su nombre. Quita los puntos del RUT (`Table.ReplaceValue` con `"."` → `""`) como salvaguarda adicional. **`Table.Distinct(..., {"RUT"})`** deduplica por primera aparición (gana el orden de llegada del archivo, no un criterio de "más reciente" como en `slep` RB-10).
 
-### 8.3.2 `Dim_Establecimiento` ← `02_Dim_Establecimiento.xlsx`
+### `Dim_Establecimiento` ← `02_Dim_Establecimiento.xlsx`
 
 Misma lógica: primera hoja, tipado y deduplicación por la clave de negocio `Establecimiento`.
 
-### 8.3.3 `Dim_AFP` ← `03_Dim_AFP.xlsx`
+### `Dim_AFP` ← `03_Dim_AFP.xlsx`
 
 Deduplicación por la combinación `{"AFP", "Tasa"}`, no solo por `AFP`. Esto es coherente con `slep` RB-07, que registra combinaciones AFP + Tasa observadas como filas separadas. La relación con `Hechos_Licencias` se arma solo por `AFP`, así que si una AFP tiene múltiples tasas en `Dim_AFP`, Power BI la trata como una sola fila de contexto de filtro por nombre; la columna `Tasa AFP` de `Hechos_Licencias` (no la de `Dim_AFP`) es la que se usa para cálculos por licencia.
 
-### 8.3.4 `Hechos_Licencias` ← `04_Hechos_Licencias.xlsx`
+### `Hechos_Licencias` ← `04_Hechos_Licencias.xlsx`
 
 Es la consulta más elaborada. Destacados:
 
@@ -529,19 +529,19 @@ Es la consulta más elaborada. Destacados:
 - **`Periodo` / `Anio` / `Mes` / `Nombre Mes`**: se derivan de `Fecha Inicio` para análisis temporal sin depender de `Dim_Calendario`.
 - **No hay `Table.Distinct`**: se asume que `slep` ya entregó los hechos deduplicados (RB-10).
 
-### 8.3.5 `Hechos_Descuentos` ← `05_Hechos_Descuentos.xlsx`
+### `Hechos_Descuentos` ← `05_Hechos_Descuentos.xlsx`
 
 - `Periodo` llega en formato `YYYY-MM` (RB-12). Se parte como texto (`Text.Start`/`Text.End`) para obtener `Anio` y `Mes` como números — no se usa `Date.FromText` porque `Periodo` no es un día completo.
 - El `try ... otherwise null` protege contra un `Periodo` mal formado.
 
-### 8.3.6 `Dim_Calendario` (tabla calculada, sin archivo de origen)
+### `Dim_Calendario` (tabla calculada, sin archivo de origen)
 
 Genera **una fila por día** entre la fecha de inicio más antigua y la más reciente de `Hechos_Licencias[Fecha Inicio]`, con columnas de apoyo: año, mes, nombre de mes, trimestre, `Año-Mes`, día de semana, fin de semana.
 
 - **Rango de respaldo**: si `Hechos_Licencias` estuviera vacía, usa por defecto `2023-01-01` a `2026-12-31` en vez de fallar.
 - Es la tabla de fechas que usa el informe para los ejes temporales (por ejemplo, `Año-Mes` en los gráficos de la página "Resumen").
 
-## 8.4 Consulta de auditoría de calidad (no cargada al modelo)
+## Consulta de auditoría de calidad (no cargada al modelo)
 
 El archivo incluye una **sexta consulta M**, `Auditoria_Calidad`, que **no corresponde a ninguna tabla del modelo** — es una consulta de solo *staging*, pensada para inspeccionarse manualmente desde el editor de Power Query.
 
@@ -568,7 +568,7 @@ Cada fila de resultado incluye una **severidad** (`CRITICA`, `ALTA`, `MEDIA`, `B
 >
 > **Cómo usarla**: abrir el **editor de Power Query** (Transformar datos), ubicar la consulta `Auditoria_Calidad` y revisar su vista previa, o habilitar su carga (clic derecho → "Habilitar carga") si se quiere convertir en una tabla visible dentro del informe.
 
-## 8.5 Modelo de datos y relaciones
+## Modelo de datos y relaciones
 
 ### Tablas del modelo
 
@@ -585,7 +585,7 @@ Además de las cinco tablas de datos y `Dim_Calendario`, Power BI crea automáti
 | `Hechos_Licencias[Fecha Inicio]` | `Dim_Calendario[Fecha]` | única dirección | Relación temporal principal para todos los ejes de fecha |
 | `Hechos_Licencias[Folio Licencia]` | `Hechos_Descuentos[Folio Licencia]` | **ambas direcciones** | Única relación bidireccional del modelo (ver 8.5.1) |
 
-### 8.5.1 Por qué la relación Licencias↔Descuentos es bidireccional
+### Por qué la relación Licencias↔Descuentos es bidireccional
 
 Es la única relación con `crossFilteringBehavior = bothDirections`. Esto es intencional: `Hechos_Descuentos` no tiene relación directa con `Dim_Establecimiento` ni con `Dim_Calendario`, así que si un usuario filtra por establecimiento o por fecha (que solo tocan `Hechos_Licencias` directamente), el filtro necesita **propagarse hacia `Hechos_Descuentos` a través de `Hechos_Licencias`** para que la página "Recuperación" (que muestra montos de `Hechos_Descuentos`) respete esos mismos filtros.
 
@@ -611,11 +611,11 @@ flowchart TD
 
 Coincide con el esquema estrella descrito en la sección 7 (salidas), con dos adiciones propias del `.pbit`: la tabla `Dim_Calendario` (que no existe como archivo de salida de `slep`, se construye solo dentro de Power BI) y la relación directa `Dim_Funcionario → Hechos_Descuentos`.
 
-## 8.6 Catálogo de medidas DAX
+## Catálogo de medidas DAX
 
 Todas las medidas viven en `Hechos_Licencias` o `Hechos_Descuentos`. Se agrupan por propósito de negocio.
 
-### 8.6.1 Volumen y estado de licencias
+### Volumen y estado de licencias
 
 | Medida | Fórmula DAX | Formato | Qué responde |
 |---|---|---|---|
@@ -630,7 +630,7 @@ Todas las medidas viven en `Hechos_Licencias` o `Hechos_Descuentos`. Se agrupan 
 
 > **Nota de negocio**: estas medidas usan directamente los cinco estados canónicos de `Resolucion Medica` definidos en RB-04 / `RE_RESOL` (sección 6.7). Si se agrega un sexto estado canónico en `constants.py`, estas medidas **no lo reconocerán automáticamente**: hay que decidir en qué grupo (autorizadas/rechazadas/otro) debe contarse y editar la fórmula DAX correspondiente.
 
-### 8.6.2 Días de licencia
+### Días de licencia
 
 | Medida | Fórmula DAX | Formato |
 |---|---|---|
@@ -641,14 +641,14 @@ Todas las medidas viven en `Hechos_Licencias` o `Hechos_Descuentos`. Se agrupan 
 
 Estas medidas usan la columna **`Dias LM`** que trae el Excel (no la `Dias LM Calculados` que agrega la consulta M en la sección 8.3.4), es decir, confían en el valor que ya viene calculado por `slep`/la planilla madre.
 
-### 8.6.3 Alcance operacional
+### Alcance operacional
 
 | Medida | Fórmula DAX | Qué mide |
 |---|---|---|
 | `Funcionarios con Licencia` | `DISTINCTCOUNT(Hechos_Licencias[RUT])` | Cuántas personas distintas tienen al menos una licencia en el filtro actual |
 | `Establecimientos Activos` | `DISTINCTCOUNT(Hechos_Licencias[Establecimiento])` | Cuántos establecimientos distintos registran licencias |
 
-### 8.6.4 Montos: recuperación y brecha Sistema vs. Pagado
+### Montos: recuperación y brecha Sistema vs. Pagado
 
 | Medida | Fórmula DAX | Formato |
 |---|---|---|
@@ -659,7 +659,7 @@ Estas medidas usan la columna **`Dias LM`** que trae el Excel (no la `Dias LM Ca
 
 Corresponden directamente a los "montos dobles" (RB-11): **Sistema** es lo calculado por el sistema de remuneraciones, **Pagado** es lo efectivamente reembolsado por FONASA/ISAPRE. La `Brecha` se calcula **sumando cada lado por separado y restando los totales**, no promediando la columna `Diferencia_Sistema_Pagado` de la consulta M — son equivalentes en el total general, pero pueden diferir sutilmente si hay valores nulos en un lado y no en el otro (`SUM` ignora nulos; una resta fila a fila con un nulo da nulo).
 
-### 8.6.5 Alertas de ausentismo prolongado (ventana móvil de 24 meses)
+### Alertas de ausentismo prolongado (ventana móvil de 24 meses)
 
 Este es el bloque de medidas más complejo del modelo, y sustenta íntegramente la página "Alertas".
 
@@ -689,7 +689,7 @@ A partir de ahí:
 
 > El propio informe advierte esta particularidad en un textbox de la página "Alertas": la ventana teórica es de 24 meses, pero como la base **tiene cobertura densa recién desde enero de 2025**, la ventana "efectiva" con datos reales es algo menor — es una limitación de los datos, no de la fórmula.
 
-### 8.6.6 Descuentos (`Hechos_Descuentos`)
+### Descuentos (`Hechos_Descuentos`)
 
 | Medida | Fórmula DAX | Formato |
 |---|---|---|
@@ -699,11 +699,11 @@ A partir de ahí:
 
 `Licencias con Descuento` cuenta folios distintos (una licencia con descuentos en varios meses cuenta una sola vez); `Cuotas de Descuento` cuenta cada cuota mensual por separado.
 
-## 8.7 El informe: páginas y visuales
+## El informe: páginas y visuales
 
 El informe tiene **6 páginas**, todas de 1280×720 px, con un **encabezado común** (textbox superior izquierdo) que se repite idéntico en las seis: nombre del SLEP, título del panel, el período de datos y una nota de navegación. Un **segmentador de `Dim_Establecimiento[Establecimiento]`** aparece en la misma posición en las seis páginas — es el filtro global sincronizado, junto con un **navegador de páginas** (`pageNavigator`) que sirve de menú entre pestañas.
 
-### 8.7.1 Página "Resumen"
+### Página "Resumen"
 
 Título: *Resumen Ejecutivo — Visión general del proceso de licencias médicas*.
 
@@ -717,7 +717,7 @@ Título: *Resumen Ejecutivo — Visión general del proceso de licencias médica
 
 Es la página de aterrizaje: KPIs globales + las tres dimensiones de análisis más consultadas (tiempo, institución, tipo de licencia).
 
-### 8.7.2 Página "Establecimientos"
+### Página "Establecimientos"
 
 Título: *Comparación entre escuelas, liceos, jardines y unidades*.
 
@@ -729,7 +729,7 @@ Título: *Comparación entre escuelas, liceos, jardines y unidades*.
 
 La tabla funciona como el detalle "para exportar/imprimir" de esta página, mezclando atributos de `Dim_Establecimiento` con medidas de `Hechos_Licencias`.
 
-### 8.7.3 Página "Funcionarios"
+### Página "Funcionarios"
 
 Título: *Historial por persona — clic derecho sobre una fila → Obtener detalles → Ficha Funcionario*.
 
@@ -741,7 +741,7 @@ Título: *Historial por persona — clic derecho sobre una fila → Obtener deta
 
 Esta página, además del filtro global de establecimiento, agrega dos segmentadores propios (por nombre y por estado de resolución) para buscar a una persona puntual. La columna `Estado Alerta` permite detectar de un vistazo, sin ir a la página de Alertas, quién ya está sobre el umbral de 180 días.
 
-### 8.7.4 Página "Ficha Funcionario" (destino de *drillthrough*)
+### Página "Ficha Funcionario" (destino de *drillthrough*)
 
 Título: *Detalle individual — página de destino del drill through desde Funcionarios o Alertas*.
 
@@ -756,7 +756,7 @@ Esta página es un **drillthrough**: tiene un filtro de página (`DrillRUT`) def
 | Tabla resumen | `Licencias Autorizadas`, `Licencias Rechazadas`, `Licencias Reducidas`, `Licencias Pendientes`, `Total Recuperado` |
 | Tabla detalle | `Folio Licencia`, `Fecha Inicio`, `Fecha Termino`, `Dias LM`, `Tipo Licencia`, `Institucion Salud`, `Resolucion Medica` — listado fila a fila de las licencias de esa persona |
 
-### 8.7.5 Página "Alertas"
+### Página "Alertas"
 
 Título: *Alertas · +180 días en 24 meses — Gestión proactiva*, con un textbox adicional que explica la regla de negocio (ver sección 8.6.5).
 
@@ -767,7 +767,7 @@ Título: *Alertas · +180 días en 24 meses — Gestión proactiva*, con un text
 
 La tabla lleva un **filtro de visual** explícito: `Dias Aprobados 24M > 180`. Es decir, a diferencia de la columna `Estado Alerta` de la página "Funcionarios" (que solo *etiqueta*), esta tabla **oculta directamente** a cualquier funcionario que no supere el umbral — solo lista los casos que requieren gestión.
 
-### 8.7.6 Página "Recuperación"
+### Página "Recuperación"
 
 Título: *Recuperación y Descuentos — Subsidios recuperados desde instituciones de salud y descuentos aplicados en remuneraciones*.
 
@@ -780,7 +780,7 @@ Título: *Recuperación y Descuentos — Subsidios recuperados desde institucion
 
 Es la única página que combina visuales de ambas tablas de hechos en el mismo lienzo, apoyándose en la relación bidireccional descrita en la sección 8.5.1.
 
-## 8.8 Tema visual
+## Tema visual
 
 El informe usa un tema personalizado (`SLEPTheme.json`, no uno de los temas predefinidos de Power BI):
 
@@ -793,31 +793,31 @@ El informe usa un tema personalizado (`SLEPTheme.json`, no uno de los temas pred
 
 El color de la primera serie de la paleta (`#2D5F8A`, el mismo definido como `tableAccent`) es el que da su tono a los encabezados de tabla y a la mayoría de los gráficos de una sola serie del informe.
 
-## 8.9 Guía de mantenimiento del dashboard
+## Guía de mantenimiento del dashboard
 
-### 8.9.1 Si `slep` cambia el nombre o la ubicación de un archivo de salida
+### Si `slep` cambia el nombre o la ubicación de un archivo de salida
 
 Editar el literal correspondiente en la consulta M de esa tabla (sección 8.3), por ejemplo `RutaCarpeta & "04_Hechos_Licencias.xlsx"`. No es necesario tocar el modelo ni el informe si las columnas no cambian.
 
-### 8.9.2 Si se agrega o renombra una columna en un Excel de salida
+### Si se agrega o renombra una columna en un Excel de salida
 
 1. Abrir la plantilla en Power BI Desktop y refrescar la consulta afectada.
 2. Si es una columna nueva: agregarla al bloque `Table.TransformColumnTypes` de la consulta M correspondiente (sección 8.3) para que quede tipada explícitamente.
 3. Si se **renombra** una columna que ya se usa en una medida DAX o en un visual, la medida/visual quedará roto silenciosamente hasta que se corrija la referencia — conviene usar la función "Buscar y reemplazar" del editor de fórmulas DAX o revisar manualmente el catálogo de la sección 8.6.
 
-### 8.9.3 Si cambia el umbral o la ventana de alertas (180 días / 24 meses)
+### Si cambia el umbral o la ventana de alertas (180 días / 24 meses)
 
 Editar el literal `180` en `Funcionarios en Alerta`, `Dias Aprobados en Alerta`, `Estado Alerta` y en el filtro de visual de la tabla de la página "Alertas" (sección 8.7.5); y el `-24` de `EDATE` en `Dias Aprobados 24M` (sección 8.6.5) si cambia la ventana móvil.
 
-### 8.9.4 Si se agrega una categoría nueva de `Resolucion Medica`
+### Si se agrega una categoría nueva de `Resolucion Medica`
 
 Las medidas de la sección 8.6.1 usan listas fijas (`IN {"Autorizada","Ampliada"}`, etc.). Un estado nuevo agregado en `constants.py` (`RE_RESOL`, ver sección 6.7) **no se sumará automáticamente** a "Autorizadas" ni a ningún otro grupo: hay que decidir en qué medida corresponde incluirlo y editar su fórmula DAX.
 
-### 8.9.5 Regenerar la plantilla desde cero
+### Regenerar la plantilla desde cero
 
 Si se necesita reconstruir el `.pbit` (por ejemplo, tras cambios profundos de estructura), replicar en este orden: (1) parámetro `RutaCarpeta`, (2) las seis consultas de origen de la sección 8.3 en el editor de Power Query, (3) las relaciones de la sección 8.5, (4) las medidas DAX de la sección 8.6, (5) las páginas y visuales de la sección 8.7, (6) importar el tema `SLEPTheme.json` (Ver → Temas → Explorar temas).
 
-## 8.10 Riesgos conocidos y limitaciones del dashboard
+## Riesgos conocidos y limitaciones del dashboard
 
 - **Deduplicación distinta a la de `slep`**: las consultas M de las dimensiones (`Dim_Funcionario`, `Dim_Establecimiento`) deduplican por **primera aparición**, no por "fuente más reciente" como hace `slep` (RB-10). En condiciones normales no debería importar, porque `slep` ya entrega las dimensiones deduplicadas — pero si alguien edita esos Excel a mano y crea un duplicado, el criterio de qué fila "gana" en Power BI puede no coincidir con el que aplicaría `slep`.
 - **`Dim_AFP` con tasas múltiples por AFP**: como se deduplica por `{AFP, Tasa}` y no solo por `AFP` (sección 8.3.3), una misma AFP con distintas tasas históricas genera varias filas de contexto; la relación con `Hechos_Licencias` es solo por `AFP`, así que el filtrado por AFP en el modelo no distingue tasas.
@@ -827,36 +827,36 @@ Si se necesita reconstruir el `.pbit` (por ejemplo, tras cambios profundos de es
 - **Relación bidireccional única**: la relación `Hechos_Licencias ↔ Hechos_Descuentos` es la única de ambos sentidos en el modelo; agregar en el futuro un segmentador directamente sobre columnas de `Hechos_Descuentos` podría producir filtrados cruzados no evidentes (sección 8.5.1).
 - **Parámetro `RutaCarpeta` sin valor por defecto**: si el usuario no lo completa (o aporta una ruta sin la barra final), todas las consultas fallarán al refrescar; no hay una validación dentro de Power Query que anticipe este error con un mensaje amigable.
 
-# 9. Guía de mantenimiento
+# Guía de mantenimiento
 
 Esta sección se divide en dos perfiles: quienes **clonan el repositorio** para modificar el código o las reglas de negocio, y quienes **solo usan la herramienta** (a través de la página web) y necesitan agregar o corregir registros en las salidas generadas.
 
 ---
 
-## 9.1 Mantenimiento del código (requiere clonar el repositorio)
+## Mantenimiento del código (requiere clonar el repositorio)
 
 > **Audiencia**: equipo de desarrollo o TI que mantiene el paquete `slep`.
 
-### 9.1.1 Agregar o corregir un establecimiento
+### Agregar o corregir un establecimiento
 
 1. Agregarlo al maestro `assets/tables/establecimientos.xlsx` con su nombre oficial (esto alimenta la coincidencia exacta y el fuzzy).
 2. Si en la planilla histórica aparece escrito de otra forma, agregar esa variante como regex en `RE_ESTABLECIMIENTO` (`constants.py`), bajo el nombre canónico oficial.
 3. Regenerar. Los que queden como "NUEVO" en el log indican variantes aún no mapeadas.
 
-### 9.1.2 Agregar un tipo de licencia, institución o estado
+### Agregar un tipo de licencia, institución o estado
 
 - Editar el mapa correspondiente en `constants.py` (`RE_TIPO`, `RE_INST`, `RE_RESOL`): nueva clave canónica + lista de patrones.
 - Recordar que las listas desplegables de `Hechos_Licencias` se generan desde estas mismas claves: al agregar la categoría y regenerar, aparece sola en las validaciones.
 
-### 9.1.3 Agregar una AFP nueva
+### Agregar una AFP nueva
 
 Agregar la entrada `"nombre normalizado": "Nombre Canónico"` en `AFP_MAP`. Si tiene tasa conocida, conviene que aparezca al menos una vez con tasa entre paréntesis en el histórico (si no, quedará con el centinela `-1`).
 
-### 9.1.4 Incorporar un nuevo año de datos
+### Incorporar un nuevo año de datos
 
 No requiere cambios de código **si** la hoja nueva sigue las convenciones: nombre `LM...AAAA` (el año se lee del nombre para la deduplicación RB-10), encabezados dentro de las filas 1-2 con una celda "rut", y columnas con los nombres (o alias) de la sección 5.1. Si el formato de montos cambia, revisar RB-11.
 
-### 9.1.5 Convenciones para escribir regex nuevas (TI)
+### Convenciones para escribir regex nuevas (TI)
 
 - Siempre **sin tildes, en minúsculas** (el texto ya pasó por `norm()`, RB-01).
 - Usar `\s*` entre palabras para tolerar espaciado irregular; `.*` cuando pueden haber palabras intermedias.
@@ -864,19 +864,19 @@ No requiere cambios de código **si** la hoja nueva sigue las convenciones: nomb
 - El **orden importa**: poner primero lo más específico; la primera clave que coincide gana.
 - Probar con valores reales del log "SIN CLASIFICAR" antes de regenerar en producción.
 
-### 9.1.6 Ciclo de regeneración
+### Ciclo de regeneración
 
 Las hojas `ref_*` y las listas desplegables se alimentan de las dimensiones. Flujo recomendado cuando cambia una dimensión: actualizar el maestro/archivo correspondiente → correr el migrador → revisar el log (especialmente "SIN CLASIFICAR" y "NUEVO") → distribuir el nuevo ZIP.
 
 ---
 
-## 9.2 Mantenimiento de las salidas (sin clonar el repositorio)
+## Mantenimiento de las salidas (sin clonar el repositorio)
 
 > **Audiencia**: equipo de gestión de personas del SLEP que usa la herramienta a través de la página web y necesita agregar o corregir registros en los archivos generados.
 >
 > **Principio general**: las dimensiones (`Dim_Funcionario`, `Dim_Establecimiento`, `Dim_AFP`) actúan como catálogos maestros. Los hechos (`Hechos_Licencias`, `Hechos_Descuentos`) son los registros operativos. **Siempre actualizar primero la dimensión y luego los hechos**.
 
-### 9.2.1 Agregar un nuevo funcionario
+### Agregar un nuevo funcionario
 
 1. Abrir `01_Dim_Funcionario.xlsx`.
 2. Agregar una fila al final de la tabla con los datos completos: `RUT`, `Nombre`, `Fecha Nacimiento`, `Sexo`, `Estado Civil`, `Dirección`, `Comuna`, `Teléfono`, `Teléfono Emergencia`, `Nacionalidad`, `Formación Profesional`, `Cargo`, `Establecimiento`.
@@ -885,7 +885,7 @@ Las hojas `ref_*` y las listas desplegables se alimentan de las dimensiones. Flu
 
 > **Tip**: si un funcionario apareció como placeholder (`RUT/Nombre no encontrado en Dim_Funcionario` en el log), completar sus datos en esta dimensión y, en la siguiente regeneración, el migrador lo reconocerá automáticamente.
 
-### 9.2.2 Agregar o corregir un establecimiento
+### Agregar o corregir un establecimiento
 
 **Opción A — El establecimiento ya existe en el maestro oficial:**
 - Si el log marcó el establecimiento como `NUEVO` pero en realidad sí existe en `02_Dim_Establecimiento.xlsx` con otro nombre, corregir el valor en la columna `Establecimiento` de `04_Hechos_Licencias.xlsx` directamente, eligiendo el nombre canónico de la lista desplegable.
@@ -897,14 +897,14 @@ Las hojas `ref_*` y las listas desplegables se alimentan de las dimensiones. Flu
 
 > **Nota**: si el establecimiento nuevo aparece repetidamente en el histórico, es más eficiente reportarlo al equipo de TI para que lo agreguen al maestro `assets/tables/establecimientos.xlsx` y a las regex de `constants.py`, de modo que la próxima regeneración lo clasifique automáticamente como "OK".
 
-### 9.2.3 Agregar o corregir una AFP o su tasa
+### Agregar o corregir una AFP o su tasa
 
 1. Abrir `03_Dim_AFP.xlsx`.
 2. Cada combinación AFP + Tasa es una fila única. Si una AFP aparece con tasa `-1` (centinela de "desconocida"), completar el valor real en la columna `Tasa`.
 3. Si aparece una AFP no reconocida (marcada como `No Aplica` con inconsistencia en el log), agregarla manualmente en esta dimensión con su tasa correspondiente.
 4. Guardar. La próxima vez que se elija esa AFP en `04_Hechos_Licencias.xlsx`, la tasa se autocompletará desde esta dimensión.
 
-### 9.2.4 Imputar una nueva licencia médica
+### Imputar una nueva licencia médica
 
 1. Abrir `04_Hechos_Licencias.xlsx`.
 2. Las últimas **40 filas en blanco** están preparadas para nuevas imputaciones. Estas filas ya incluyen:
@@ -920,7 +920,7 @@ Las hojas `ref_*` y las listas desplegables se alimentan de las dimensiones. Flu
 
 > **Importante**: las hojas ocultas `ref_Funcionario`, `ref_AFP`, `ref_Listas` y `ref_Descuentos` **no se editan a mano**. Si se agregaron nuevos funcionarios, AFPs o establecimientos en las dimensiones, regenerar el archivo con el migrador para que las referencias internas se actualicen.
 
-### 9.2.5 Agregar o corregir descuentos mensuales
+### Agregar o corregir descuentos mensuales
 
 1. Abrir `05_Hechos_Descuentos.xlsx`.
 2. Cada fila representa un descuento de un mes específico para una licencia.
@@ -929,7 +929,7 @@ Las hojas `ref_*` y las listas desplegables se alimentan de las dimensiones. Flu
 
 > **Tip**: desde `04_Hechos_Licencias.xlsx`, la columna `Aplica Descuentos` muestra un enlace clicable `Sí (n desc.)` que abre `05_Hechos_Descuentos.xlsx` filtrado por el folio correspondiente.
 
-### 9.2.6 Ciclo de trabajo para usuarios finales
+### Ciclo de trabajo para usuarios finales
 
 El flujo recomendado para el equipo de gestión de personas es:
 
@@ -944,7 +944,7 @@ El flujo recomendado para el equipo de gestión de personas es:
 
 ---
 
-# 10. Riesgos conocidos y limitaciones
+# Riesgos conocidos y limitaciones
 
 - **Correcciones fuzzy no son verdad absoluta**: todo lo marcado "Corregido (revisar)" debe auditarse; un umbral de 0,6 puede atraer valores a la categoría equivocada en textos muy cortos.
 - **El orden de las regex es significativo**: al evaluarse en orden de declaración, un patrón amplio declarado antes puede "capturar" un texto que debía ir a otra categoría (ej. `preventiva` sola captura cualquier frase que la contenga). Es intencional, pero hay que conocerlo al editar.
@@ -956,7 +956,7 @@ El flujo recomendado para el equipo de gestión de personas es:
 
 ---
 
-# 11. Glosario
+# Glosario
 
 | Término | Definición |
 |---|---|
