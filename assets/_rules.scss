@@ -1259,10 +1259,6 @@ nav.quarto-page-breadcrumbs {
     }
 }
 
-.quarto-page-breadcrumbs .breadcrumb-item + .breadcrumb-item:last-child {
-    &:has(a[href]:only-of-type) {
-    }
-}
 .quarto-page-breadcrumbs:has(.breadcrumb-item:only-child) {
     display: none;
 }
