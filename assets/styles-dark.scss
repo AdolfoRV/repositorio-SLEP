@@ -2,21 +2,21 @@
 
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap");
 
-// Base Palette
-$bg-primary: #ffffff;
-$bg-secondary: #f6f8fa;
-$text: #1f2328;
-$accent: #950404;
-$border: #d0d7de;
+// Dark Theme Palette
+$bg-primary: #0d1117;
+$bg-secondary: #161b22;
+$text: #e6edf3;
+$accent: #d42d2d;
+$border: #30363d;
 
 // Shared variables
-$shadow: rgba(31, 35, 40, 0.06);
-$shadow-md: rgba(31, 35, 40, 0.14);
+$shadow: rgba(0, 0, 0, 0.3);
+$shadow-md: rgba(0, 0, 0, 0.55);
 $radius: 6px;
 $radius-lg: 10px;
 $transition: 0.2s ease;
-$icon-invert: none;
-$bs-secondary-color: rgba(31, 35, 40, 0.65);
+$icon-invert: invert(1) grayscale(100%) brightness(1.5);
+$bs-secondary-color: rgba(230, 237, 243, 0.65);
 
 // Bootstrap / Quarto overrides
 $body-bg: $bg-primary;

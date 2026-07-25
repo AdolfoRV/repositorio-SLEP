@@ -1,0 +1,1271 @@
+:root {
+    --bg-primary: #{$bg-primary};
+    --bg-secondary: #{$bg-secondary};
+    --text-primary: #{$text};
+    --accent: #{$accent};
+    --border: #{$border};
+    --shadow: #{$shadow};
+    --shadow-md: #{$shadow-md};
+    --radius: #{$radius};
+    --radius-lg: #{$radius-lg};
+    --transition: #{$transition};
+    --icon-invert: #{$icon-invert};
+
+    // Bootstrap/Quarto bridge — everything points to CSS vars
+    --bs-body-bg: #{$bg-primary};
+    --bs-body-color: #{$text};
+    --bs-secondary-bg: #{$bg-secondary};
+    --bs-tertiary-bg: #{$bg-secondary};
+    --bs-border-color: #{$border};
+    --bs-emphasis-color: #{$text};
+    --bs-secondary-color: #{$bs-secondary-color};
+    --bs-link-color: #{$accent};
+    --bs-link-hover-color: #{$accent};
+    --bs-code-color: #{$accent};
+
+    --bs-heading-color: #{$text};
+    --bs-table-color: #{$text};
+    --bs-table-bg: transparent;
+    --bs-table-border-color: #{$border};
+    --bs-card-bg: #{$bg-secondary};
+    --bs-card-border-color: #{$border};
+    --bs-nav-link-color: #{$text};
+    --bs-nav-link-hover-color: #{$accent};
+    --bs-navbar-color: #{$text};
+    --bs-navbar-hover-color: #{$accent};
+    --bs-navbar-active-color: #{$accent};
+
+    // Mermaid
+    --mermaid-bg-color: #{$bg-primary};
+    --mermaid-node-bg-color: #{$bg-primary};
+    --mermaid-node-fg-color: #{$border};
+    --mermaid-edge-color: #{$border};
+    --mermaid-label-bg-color: #{$bg-primary};
+    --mermaid-label-fg-color: #{$text};
+    --mermaid-fg-color: #{$text};
+    --mermaid-fg-color--lighter: #{$border};
+    --mermaid-fg-color--lightest: color-mix(in srgb, #{$accent} 6%, #{$bg-primary});
+    --mermaid-font-family: #{$font-family-sans-serif};
+    --mermaid-font-weight: 500;
+}
+
+// Bootstrap / UI component theming
+
+body {
+    background-color: $bg-primary;
+    color: $text;
+    font-family: $font-family-sans-serif;
+    font-size: $font-size-root;
+    line-height: $line-height-base;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition:
+        background-color $transition,
+        color $transition;
+}
+
+a {
+    color: $accent;
+    text-decoration: none;
+    transition:
+        color $transition,
+        opacity $transition;
+
+    &:hover {
+        color: $accent;
+        opacity: 0.75;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+}
+
+i,
+svg,
+.bi {
+    color: inherit;
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: $font-family-sans-serif;
+    font-weight: $headings-font-weight;
+    line-height: $headings-line-height;
+    color: $text;
+    letter-spacing: -0.015em;
+}
+
+h1 {
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+}
+h2 {
+    font-size: clamp(1.45rem, 3vw, 1.85rem);
+    border-bottom: 1px solid $border;
+}
+h3 {
+    font-size: clamp(1.15rem, 2.5vw, 1.4rem);
+}
+
+p {
+    color: $text;
+}
+strong {
+    font-weight: 600;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid $border;
+    margin: 2rem 0;
+}
+
+blockquote {
+    border-left: 3px solid $accent;
+    margin: 1.5rem 0;
+    padding: 0.75rem 1.25rem;
+    background: color-mix(in srgb, $accent 6%, transparent);
+    border-radius: 0 $radius $radius 0;
+    font-style: italic;
+    color: $text;
+    opacity: 0.85;
+}
+
+// Code
+pre,
+code,
+.sourceCode {
+    background-color: $bg-secondary !important;
+    color: inherit;
+    border-color: $border;
+}
+
+code:not(pre code):not(.sourceCode) {
+    font-family: $font-family-monospace;
+    font-size: 0.875em;
+    background: $border;
+    color: $accent;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.code-annotation-container-hidden,
+.code-copy-button {
+    color: $text;
+}
+
+// Tables
+table,
+.table {
+    color: $text;
+    border-color: $border;
+    background-color: transparent;
+}
+thead,
+th {
+    color: $text;
+    border-color: $border;
+    background-color: $bg-secondary;
+}
+td {
+    border-color: $border;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > *,
+.table-hover > tbody > tr:hover > * {
+    background-color: $bg-secondary;
+    color: $text;
+}
+
+// Navs / navbar / tabs / pills
+.navbar,
+.navbar-brand,
+#quarto-header {
+    color: $text;
+}
+
+.nav-link {
+    color: $text;
+    &:hover,
+    &:focus {
+        color: $accent;
+    }
+    &.active {
+        color: $accent !important;
+        border-color: $border $border $bg-primary;
+    }
+}
+.nav-tabs .nav-link.active, .nav-tabs .nav-link.active:focus, .nav-tabs .nav-link.active:hover, .nav-tabs .nav-item.open .nav-link, .nav-tabs .nav-item.open .nav-link:focus, .nav-tabs .nav-item.open .nav-link:hover {
+    color: $bg-secondary;
+}
+
+.nav-tabs,
+.nav-pills {
+    border-color: $border;
+}
+.nav-tabs .nav-link.active {
+    color: $accent;
+    background-color: $bg-primary;
+    border-color: $border $border $bg-primary;
+}
+.nav-pills .nav-link.active {
+    background-color: $accent;
+    color: $bg-primary;
+}
+
+// Sidebar / TOC
+#quarto-sidebar,
+.sidebar,
+.sidebar-navigation,
+#TOC,
+.toc-actions {
+    background-color: $bg-primary;
+    color: $text;
+    border-color: $border;
+    a {
+        color: $text;
+        &:hover,
+        &.active {
+            color: $accent;
+        }
+    }
+}
+
+// Buttons
+.btn {
+    color: $text;
+    background-color: transparent;
+}
+.btn-primary,
+.btn-outline-primary:hover {
+    background-color: $accent;
+    border-color: $accent;
+    color: $bg-primary;
+}
+
+// Forms
+.form-control,
+input,
+select,
+textarea {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+    &:focus {
+        background-color: $bg-secondary;
+        color: $text;
+        border-color: $accent;
+    }
+    &::placeholder {
+        color: var(--bs-secondary-color);
+    }
+}
+
+.form-check-input {
+    background-color: $bg-secondary;
+    border-color: $border;
+    &:checked {
+        background-color: $accent;
+        border-color: $accent;
+    }
+}
+.form-switch .form-check-input {
+    background-color: $bg-secondary;
+}
+.input-group-text {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+}
+
+// Dropdowns / menus
+.dropdown-menu {
+    background-color: $bg-secondary;
+    border-color: $border;
+}
+.dropdown-item {
+    color: $text;
+    &:hover,
+    &:focus {
+        background-color: $bg-primary;
+        color: $accent;
+    }
+}
+
+// Cards / callouts / alerts
+.card {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+}
+.callout {
+    background-color: $bg-secondary;
+    border-left-color: $accent;
+    .callout-title-container,
+    .callout-body {
+        color: $text;
+    }
+}
+.alert {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+}
+
+// Modal / Pagination / Toasts / Misc UI
+.modal-content {
+    background-color: $bg-secondary;
+    color: $text;
+    border-color: $border;
+}
+.modal-header,
+.modal-footer {
+    border-color: $border;
+}
+.page-link {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+    &:hover {
+        background-color: $bg-primary;
+        color: $accent;
+    }
+}
+.page-item.active .page-link {
+    background-color: $accent;
+    border-color: $accent;
+    color: $bg-primary;
+}
+.badge {
+    color: $bg-primary;
+    background-color: $accent;
+    font-family: $font-family-monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+}
+
+.list-group-item {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+    &.active {
+        background-color: $accent;
+        border-color: $accent;
+        color: $bg-primary;
+    }
+    &:hover,
+    &:focus {
+        background-color: $bg-primary;
+        color: $text;
+    }
+    &.disabled {
+        background-color: $bg-secondary;
+        color: var(--bs-secondary-color);
+    }
+}
+
+.popover {
+    background-color: $bg-secondary;
+    border-color: $border;
+    .popover-header {
+        background-color: $bg-primary;
+        border-color: $border;
+        color: $text;
+    }
+    .popover-body {
+        color: $text;
+    }
+}
+.tooltip .tooltip-inner {
+    background-color: $bg-secondary;
+    color: $text;
+}
+.toast {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+}
+.toast-header {
+    background-color: $bg-primary;
+    border-color: $border;
+    color: $text;
+}
+
+.progress {
+    background-color: $bg-secondary;
+}
+.progress-bar {
+    background-color: $accent;
+    color: $bg-primary;
+}
+
+.breadcrumb {
+    background-color: $bg-secondary;
+}
+.breadcrumb-item {
+    color: $text;
+    a {
+        color: $accent;
+    }
+    &.active {
+        color: var(--bs-secondary-color);
+    }
+    + .breadcrumb-item::before {
+        color: var(--bs-secondary-color);
+    }
+}
+
+.accordion-item {
+    background-color: $bg-secondary;
+    border-color: $border;
+    color: $text;
+}
+.accordion-button {
+    background-color: $bg-secondary;
+    color: $text;
+    &:not(.collapsed) {
+        background-color: $bg-primary;
+        color: $accent;
+    }
+    &::after {
+        filter: $icon-invert;
+    }
+}
+.btn-close {
+    filter: $icon-invert;
+}
+
+.footnote-ref,
+.footnotes a {
+    color: $accent;
+}
+figcaption,
+.figure-caption {
+    color: var(--bs-secondary-color);
+}
+
+.nav-footer,
+#quarto-appendix {
+    background-color: $bg-primary;
+    color: $text;
+    border-color: $border;
+    a {
+        color: $accent;
+    }
+}
+
+#quarto-search,
+.aa-DetachedSearchButton,
+.aa-DetachedOverlay,
+.aa-Panel {
+    background-color: transparent;
+    color: $text;
+    border-color: $border;
+}
+
+::selection {
+    background: color-mix(in srgb, $accent 25%, transparent);
+    color: $text;
+}
+::-webkit-scrollbar {
+    background-color: $bg-primary;
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background-color: $border;
+    border-radius: 3px;
+    &:hover {
+        background-color: $accent;
+    }
+}
+
+// QUARTO-SPECIFIC & RICH COMPONENT STYLES
+
+.navbar {
+    border-bottom: 1px solid $border !important;
+    box-shadow: none;
+    padding: 0.6rem 1.5rem;
+    transition: background-color $transition;
+
+    .navbar-brand {
+        font-family: $font-family-monospace;
+        font-weight: 600;
+        font-size: 1rem;
+        color: $accent !important;
+        letter-spacing: -0.02em;
+        &:hover {
+            opacity: 0.8;
+        }
+    }
+    .nav-link {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: $text !important;
+        opacity: 0.8;
+        padding: 0.4rem 0.75rem !important;
+        border-radius: $radius;
+        transition: all $transition;
+        &:hover {
+            opacity: 1;
+            background: $border;
+            text-decoration: none;
+        }
+        &.active {
+            opacity: 1;
+            color: $accent !important;
+        }
+    }
+    .dropdown-menu {
+        background: $bg-secondary;
+        border: 1px solid $border;
+        border-radius: $radius-lg;
+        box-shadow: 0 8px 24px $shadow-md;
+        padding: 0.5rem;
+        min-width: 220px;
+        .dropdown-item {
+            font-size: 0.9rem;
+            color: $text;
+            padding: 0.45rem 0.75rem;
+            border-radius: $radius;
+            transition: all $transition;
+            &:hover {
+                background: $border;
+                color: $accent;
+            }
+        }
+        .dropdown-divider {
+            border-color: $border;
+        }
+    }
+}
+
+#quarto-sidebar {
+    border-right: 1px solid $border !important;
+    transition: all 0.3s ease;
+
+    .sidebar-title {
+        font-family: $font-family-sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: $accent !important;
+        padding: 1rem 1rem 0.5rem;
+    }
+    .sidebar-section .sidebar-section-item {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: $text;
+        opacity: 0.45;
+        padding: 0.6rem 1rem 0.25rem;
+        margin-top: 0.5rem;
+    }
+    .sidebar-item-text {
+        font-size: 0.9rem;
+        color: $text;
+        opacity: 0.8;
+        transition: all $transition;
+    }
+
+    .sidebar-item-container {
+        display: flex;
+        align-items: center;
+        border-radius: $radius;
+        margin: 0.05rem 0.5rem;
+        transition: background $transition;
+        cursor: pointer;
+        &:hover {
+            background: $border;
+            .sidebar-item-text,
+            .sidebar-link,
+            .sidebar-item-toggle {
+                opacity: 1;
+                color: $accent !important;
+            }
+        }
+        &:has(> .active),
+        &:has(> [aria-expanded="true"]) {
+            background: color-mix(in srgb, $accent 12%, transparent);
+            .sidebar-item-text,
+            .sidebar-link,
+            .sidebar-item-toggle {
+                opacity: 1;
+                color: $accent !important;
+                font-weight: 500;
+            }
+        }
+        a {
+            display: block;
+            padding: 0.35rem 0.5rem;
+            text-decoration: none;
+            background: transparent !important;
+            border-radius: 0;
+            flex: 1;
+            &.sidebar-item-toggle {
+                flex: 0;
+                padding: 0.35rem 0.75rem 0.35rem 0;
+            }
+            &:hover {
+                background: transparent !important;
+                text-decoration: none;
+            }
+        }
+    }
+
+    .sidebar-item > a:not(.sidebar-item-toggle) {
+        display: block;
+        padding: 0.35rem 1rem;
+        border-radius: $radius;
+        margin: 0.05rem 0.5rem;
+        transition: all $transition;
+        text-decoration: none;
+        opacity: 0.8;
+        color: $text;
+        &:hover {
+            background: $border;
+            opacity: 1;
+            color: $accent;
+        }
+        &.active {
+            background: color-mix(in srgb, $accent 12%, transparent);
+            opacity: 1;
+            color: $accent;
+            font-weight: 500;
+        }
+    }
+}
+
+#quarto-sidebar-toggle {
+    background: $bg-secondary;
+    border: 1px solid $border;
+    border-radius: 50%;
+    color: $text;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all $transition;
+    box-shadow: 0 2px 6px $shadow;
+    &:hover {
+        background: $border;
+        color: $accent;
+    }
+}
+
+#quarto-content {
+    background: $bg-primary;
+    .content {
+        max-width: 840px;
+    }
+}
+
+.quarto-title {
+    border-bottom: 2px solid $border;
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    .title {
+        font-family: $font-family-sans-serif;
+        font-size: clamp(2rem, 5vw, 3rem);
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: $text;
+        line-height: 1.15;
+    }
+    .description {
+        font-size: 1.1rem;
+        opacity: 0.65;
+        margin-top: 0.75rem;
+    }
+    .quarto-title-meta {
+        font-size: 0.85rem;
+        opacity: 0.5;
+        font-family: $font-family-monospace;
+    }
+}
+
+#TOC {
+  border-radius: $radius-lg;
+  padding: 1.25rem;
+
+  .toc-title {
+    font-family: $font-family-sans-serif;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: $accent;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  a {
+    transition: all $transition;
+    &:hover, &.active {
+      opacity: 1;
+      color: $accent;
+      text-decoration: none;
+    }
+  }
+}
+
+div.sourceCode {
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    box-shadow: 0 2px 8px $shadow;
+    pre {
+        margin: 0;
+        padding: 1.25rem 1.5rem;
+        background: transparent;
+        font-family: $font-family-monospace;
+        font-size: 0.9rem;
+        line-height: 1.65;
+    }
+}
+
+details.code-fold {
+    background: $bg-secondary;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    margin: 1rem 0;
+    overflow: hidden;
+    summary {
+        padding: 0.75rem 1rem;
+        font-family: $font-family-monospace;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: $accent;
+        cursor: pointer;
+        transition: background $transition;
+        &:hover {
+            background: $border;
+        }
+    }
+}
+
+.callout {
+    border-radius: $radius-lg;
+    border: none;
+    box-shadow: 0 2px 8px $shadow;
+    margin: 1.5rem 0;
+    overflow: hidden;
+    .callout-header {
+        font-family: $font-family-sans-serif;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.65rem 1.25rem;
+    }
+    .callout-body {
+        padding: 1rem 1.25rem;
+        font-size: 0.95rem;
+    }
+    &.callout-note {
+        border-left: 4px solid $accent;
+        .callout-header {
+            background: color-mix(in srgb, $accent 10%, transparent);
+            color: $accent;
+        }
+    }
+    &.callout-warning {
+        border-left: 4px solid #f59e0b;
+        .callout-header {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+    }
+    &.callout-important {
+        border-left: 4px solid #ef4444;
+        .callout-header {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+    }
+    &.callout-tip {
+        border-left: 4px solid #10b981;
+        .callout-header {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+    }
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.95rem;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    box-shadow: 0 1px 4px $shadow;
+    thead {
+        background: $border;
+        th {
+            font-family: $font-family-sans-serif;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            font-weight: 600;
+            color: $text;
+            padding: 0.75rem 1rem;
+            border: none;
+        }
+    }
+    tbody {
+        tr {
+            border-bottom: 1px solid $border;
+            transition: background $transition;
+            &:hover {
+                background: color-mix(in srgb, $border 50%, transparent);
+            }
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+        td {
+            padding: 0.65rem 1rem;
+            border: none;
+            vertical-align: top;
+        }
+    }
+}
+
+.nav-footer {
+    border-top: 1px solid $border;
+    padding: 1.25rem 2rem;
+    font-size: 0.875rem;
+    color: $text;
+    opacity: 0.6;
+    a {
+        color: $accent;
+        font-weight: 500;
+        &:hover {
+            opacity: 0.75;
+            text-decoration: none;
+        }
+    }
+}
+
+.page-navigation {
+    border-top: 1px solid $border;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    a {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem 1.25rem;
+        background: $bg-secondary;
+        border: 1px solid $border;
+        border-radius: $radius-lg;
+        font-size: 0.9rem;
+        color: $text;
+        transition: all $transition;
+        flex: 1;
+        text-decoration: none;
+        &:hover {
+            border-color: $accent;
+            background: color-mix(
+                in srgb,
+                $accent 6%,
+                $bg-secondary
+            );
+            color: $accent;
+        }
+        .nav-page-text {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            opacity: 0.5;
+            margin-bottom: 0.25rem;
+        }
+        .nav-page-title {
+            font-weight: 500;
+        }
+    }
+}
+
+#quarto-back-to-top {
+    background: $accent;
+    color: white;
+    border: none;
+    border-radius: $radius;
+    padding: 0.5rem 1rem;
+    font-size: 0.82rem;
+    font-family: $font-family-monospace;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity $transition;
+    box-shadow: 0 4px 12px color-mix(in srgb, $accent 30%, transparent);
+    opacity: 0.75;
+    &:hover {
+        opacity: 1;
+    }
+}
+
+// LANDING PAGE & CUSTOM APP STYLES
+
+.hero-section {
+    padding: 1rem 0 2rem;
+    border-bottom: 1px solid $border;
+    margin-bottom: 3rem;
+    h1 {
+        font-size: clamp(2.5rem, 7vw, 4.5rem);
+        font-family: $font-family-sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        margin-bottom: 1.25rem;
+        color: $text;
+        span {
+            color: $accent;
+        }
+    }
+    h2 {
+        display: inline-block;
+        font-family: $font-family-monospace;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: $accent;
+        background: color-mix(in srgb, $accent 10%, transparent);
+        padding: 0.3rem 0.75rem;
+        border-radius: 100px;
+        margin-bottom: 1.25rem;
+    }
+}
+
+.course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+.course-card {
+    background: $bg-secondary;
+    border: 1px solid $border;
+    border-radius: $radius-lg;
+    padding: 1.25rem 1.5rem;
+    text-decoration: none;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+        background: $accent;
+        opacity: 0;
+        transition: opacity $transition;
+    }
+    &:hover {
+        border-color: $accent;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px $shadow-md;
+        text-decoration: none;
+        &::before {
+            opacity: 1;
+        }
+        .course-title {
+            color: $accent;
+        }
+    }
+    .course-category {
+        font-family: $font-family-monospace;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: $accent;
+        opacity: 0.75;
+    }
+    .course-title {
+        font-family: $font-family-sans-serif;
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: $text;
+        line-height: 1.35;
+        transition: color $transition;
+    }
+    .course-desc {
+        font-size: 0.875rem;
+        color: $text;
+        opacity: 0.55;
+        line-height: 1.6;
+        margin-top: 0.25rem;
+    }
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 2.5rem 0 1rem;
+    h2 {
+        font-family: $font-family-sans-serif;
+        font-size: 0.78rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: $text;
+        opacity: 0.5;
+        margin: 0;
+    }
+    &::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: $border;
+    }
+}
+
+.slep-app {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0.5rem 0;
+    .upload-box {
+        background: $bg-secondary;
+        border: 1.5px dashed $border;
+        border-radius: $radius-lg;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        transition: all $transition;
+        strong {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            color: $text;
+            margin-bottom: 0.25rem;
+        }
+        small {
+            display: block;
+            font-size: 0.85rem;
+            color: $text;
+            opacity: 0.6;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+        code {
+            background: transparent;
+            padding: 0;
+            font-size: 0.9em;
+        }
+        input[type="file"] {
+            font-size: 0.875rem;
+            color: $text;
+            cursor: pointer;
+            max-width: 100%;
+        }
+        &:hover,
+        &.dragover {
+            border-color: $accent;
+            background: color-mix(
+                in srgb,
+                $accent 5%,
+                $bg-secondary
+            );
+        }
+    }
+    .file-tag {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        margin-top: 0.75rem;
+        padding: 0.35rem 0.9rem;
+        background: color-mix(in srgb, $accent 12%, transparent);
+        border: 1px solid $accent;
+        border-radius: 100px;
+        font-family: $font-family-monospace;
+        font-size: 0.8rem;
+        color: $accent;
+        font-weight: 600;
+        &::before {
+            content: "✓";
+            font-size: 0.75rem;
+        }
+        &.visible {
+            display: inline-flex;
+        }
+    }
+    .actions {
+        text-align: center;
+        margin: 2rem 0;
+    }
+    #btn-procesar {
+        background: $accent;
+        color: #fff;
+        border: none;
+        border-radius: $radius;
+        padding: 0.8rem 2rem;
+        font-family: $font-family-sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        transition: all $transition;
+        box-shadow: 0 4px 14px $shadow;
+        &:hover:not(:disabled) {
+            opacity: 0.92;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px $shadow-md;
+        }
+        &:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        &:disabled {
+            background: $border;
+            color: $text;
+            opacity: 0.45;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+    }
+    #log {
+        background: $bg-secondary;
+        border: 1px solid $border;
+        border-radius: $radius-lg;
+        padding: 1rem 1.25rem;
+        margin-top: 1rem;
+        font-family: $font-family-monospace;
+        font-size: 0.82rem;
+        line-height: 1.7;
+        color: $text;
+        opacity: 0.9;
+        min-height: 3.5rem;
+        max-height: 280px;
+        overflow-y: auto;
+        &:empty::before {
+            content: "Esperando archivos…";
+            opacity: 0.35;
+            font-style: italic;
+        }
+        .log-error {
+            color: #ef4444;
+        }
+        .log-success {
+            color: #10b981;
+        }
+        .log-info {
+            color: $accent;
+        }
+        .log-warn {
+            color: #f59e0b;
+        }
+    }
+    #downloads {
+        background: $bg-secondary;
+        border: 1px solid $border;
+        border-radius: $radius-lg;
+        padding: 1.25rem 1.5rem;
+        margin-top: 1.5rem;
+        h3 {
+            margin: 0 0 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: $text;
+            opacity: 0.6;
+        }
+    }
+    #download-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.55rem 0;
+            border-bottom: 1px solid $border;
+            font-size: 0.9rem;
+            &:last-child {
+                border-bottom: none;
+            }
+            &::before {
+                content: "↓";
+                color: $accent;
+                font-weight: 700;
+                font-size: 0.9rem;
+            }
+            a {
+                color: $accent;
+                font-weight: 500;
+                text-decoration: none;
+                &:hover {
+                    text-decoration: underline;
+                    text-underline-offset: 3px;
+                }
+            }
+        }
+    }
+}
+
+nav.quarto-page-breadcrumbs {
+    --bs-breadcrumb-bg: transparent;
+    background: transparent !important;
+    .breadcrumb {
+        font-size: 0.82rem;
+        margin: 0;
+        background: transparent;
+    }
+    .breadcrumb-item {
+        color: $text !important;
+        opacity: 0.55;
+        &.active {
+            color: $text !important;
+        }
+        + .breadcrumb-item::before {
+            color: $text !important;
+            opacity: 0.3;
+        }
+        a {
+            color: $text !important;
+            opacity: 0.55;
+            text-decoration: none;
+            transition:
+                opacity $transition,
+                color $transition;
+            &:hover {
+                color: $accent !important;
+                opacity: 1;
+                text-decoration: none;
+            }
+        }
+    }
+}
+
+.quarto-page-breadcrumbs .breadcrumb-item + .breadcrumb-item:last-child {
+    &:has(a[href]:only-of-type) {
+    }
+}
+.quarto-page-breadcrumbs:has(.breadcrumb-item:only-child) {
+    display: none;
+}
+.math {
+    font-size: 1.05em;
+}
