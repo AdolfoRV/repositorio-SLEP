@@ -593,7 +593,7 @@ Es la única relación con `crossFilteringBehavior = bothDirections`. Esto es in
 
 ### Esquema estrella resultante
 
-```mermaid
+```{mermaid}
 flowchart TD
     F["Dim_Funcionario<br/>(RUT)"]
     E["Dim_Establecimiento<br/>(Establecimiento)"]
