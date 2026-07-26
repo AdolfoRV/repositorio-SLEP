@@ -4,6 +4,7 @@ project:
   resources:
     - assets/**
     - scripts/**
+lang: es
 
 website:
   title: "Proyecto SLEP"
@@ -31,8 +32,8 @@ website:
 format:
   html:
     theme:
-      light: [flatly, assets/styles.scss]
-      dark: [darkly, assets/styles-dark.scss]
+      light: [assets/styles.scss]
+      dark: [assets/styles-dark.scss]
     respect-user-color-scheme: true
     toc: false
     toc-depth: 3

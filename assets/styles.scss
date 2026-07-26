@@ -34,12 +34,22 @@ $line-height-base: 1.75;
 $headings-font-weight: 600;
 $headings-line-height: 1.25;
 
+$input-bg:                $bg-secondary;
+$input-border-color:      $border-color;
+$input-color:             $text;
+
+$popover-bg:              $bg-primary;
+$popover-body-color:      $text;
+
+$component-active-bg:     $bg-secondary;
+$component-active-color:  $text;
+
 // Component Backgrounds
 $navbar-bg: $bg-secondary;
 $sidebar-bg: $bg-secondary;
 $footer-bg: $bg-secondary;
 $code-block-bg: $bg-secondary;
-$code-bg: $border;
+$code-bg: $border-color;
 $code-color: $accent;
 
 // Quarto TOC Variables
